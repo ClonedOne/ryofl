@@ -2,7 +2,7 @@ import os
 import h5py
 
 
-def load_dataset(data, fraction):
+def load_dataset(dataset, fraction):
     pass
 
 
