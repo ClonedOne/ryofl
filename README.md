@@ -29,11 +29,17 @@ realistic, such as:
 Before continuing please make sure you have setup the correct paths in
 `ryofl/common.py`.
 
+Install requirements with `make init`, and install the package with `make
+install`. 
+
+
 ## Testing
 
-Run tests with `pytest`.
-Tests will be automatically discovered by looking in the `tests/` directory for
-files and functions having `test` as a prefix.
+Run tests with `make test`.
+
+Testing is done via `pytest`.  Tests will be automatically discovered by looking
+in the `tests/` directory for files and functions having `test` as a prefix.
+
 
 ## Data
 
@@ -41,5 +47,4 @@ Use `python ryofl/generate_datasets.py` to download the datasets. The location
 where to download the datasets can be changed in the header of the file. 
 
 **Note this is the only part of the code which depends on Tensorflow**
-
 
