@@ -4,6 +4,9 @@ Constants that should be accessible from any other file
 
 import os
 
+# Number of processors to be used when possible
+processors = 4
+
 # This is the directory where the dataset will be saved.
 # Change this to a path with sufficient disk space.
 data_dir = '/home/gio/data/'

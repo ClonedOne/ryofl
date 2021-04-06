@@ -1,3 +1,9 @@
+"""
+Utility to download the datasets and generate the per-client data matrices.
+The _generate* are structured like this to avoid the dependance on
+tensorflow_federated in othere modules.
+"""
+
 import os
 
 import h5py
@@ -141,6 +147,9 @@ def generate_datasets(dataset, force):
 
     elif dataset == 'cifar100':
         _generate_cifar100(force)
+
+    else:
+        raise NotImplementedError('Dataset {} not supported'.format(dataset))
 
 
 if __name__ == '__main__':

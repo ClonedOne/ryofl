@@ -1,5 +1,7 @@
 import os
 
+from multiprocessing import Pool
+
 import h5py
 import numpy as np
 
@@ -71,7 +73,7 @@ def _load_full(base_dir=''):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def load_single_client(client_id, base_dir=''):
+def _load_single_client(client_id, base_dir=''):
     """ Load the FEMNIST data for a single client
 
     Args:
@@ -82,13 +84,12 @@ def load_single_client(client_id, base_dir=''):
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
     """
 
-
     if not base_dir:
         _dir = common.femnist_clients_dir
     else:
         _dir = base_dir
 
-    client_f = os.path.join(_dir, '{}_cli-' + str(client_id) + '_{}')
+    client_f = os.path.join(_dir, '{}_cli-' + str(client_id) + '_{}.npy')
 
     trn_x = np.load(client_f.format('trn', 'x'), allow_pickle=True)
     trn_y = np.load(client_f.format('trn', 'y'), allow_pickle=True)
@@ -98,13 +99,97 @@ def load_single_client(client_id, base_dir=''):
     return trn_x, trn_y, tst_x, tst_y
 
 
+def _load_data_handler(in_data):
+    """ Helper function for multiprocess data loading
+
+    Args:
+        in_data (tuple): worker id, list of clients, data directory
+
+    Returns:
+        (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
+    """
+
+    #  wid = in_data[0]
+    clients = in_data[1]
+    _dir = in_data[2]
+
+    # If the clients list is empty, this worker is unused
+    if clients.size == 0:
+        return (np.array([]), np.array([]), np.array([]), np.array([]))
+
+    trn_x_acc = []
+    trn_y_acc = []
+    tst_x_acc = []
+    tst_y_acc = []
+
+    # Load data for all the clients
+    for client_id in clients:
+        trn_x, trn_y, tst_x, tst_y = _load_single_client(
+            client_id=client_id, base_dir=_dir)
+
+        trn_x_acc.append(trn_x)
+        trn_y_acc.append(trn_y)
+        tst_x_acc.append(tst_x)
+        tst_y_acc.append(tst_y)
+
+    trn_x = np.concatenate(trn_x_acc)
+    trn_y = np.concatenate(trn_y_acc)
+    tst_x = np.concatenate(tst_x_acc)
+    tst_y = np.concatenate(tst_y_acc)
+
+    return trn_x, trn_y, tst_x, tst_y
+
+
+def _load_multi_clients(clients, base_dir=''):
+    """ Use multiprocessing to load the data for multiple clients
+
+    Args:
+        clients: (list, ndarray, string) ids of the clients to load
+        base_dir (str): overwrite default data dir
+
+
+    Returns:
+        (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
+    """
+
+    if not base_dir:
+        _dir = common.femnist_clients_dir
+    else:
+        _dir = base_dir
+
+    workers = common.processors
+
+    cli_lists = np.array_split(clients, workers)
+    in_data_l = [(i, cli_lists[i], _dir) for i in range(workers)]
+
+    with Pool(workers) as p:
+        rets = p.map(_load_data_handler, in_data_l)
+
+    trn_x_acc = []
+    trn_y_acc = []
+    tst_x_acc = []
+    tst_y_acc = []
+
+    for ret in rets:
+        trn_x_acc.append(ret[0])
+        trn_y_acc.append(ret[1])
+        tst_x_acc.append(ret[2])
+        tst_y_acc.append(ret[3])
+
+    trn_x = np.concatenate(trn_x_acc)
+    trn_y = np.concatenate(trn_y_acc)
+    tst_x = np.concatenate(tst_x_acc)
+    tst_y = np.concatenate(tst_y_acc)
+
+    return trn_x, trn_y, tst_x, tst_y
+
 
 def load_data(clients, frac=1.0):
     """ Load data wrapper for FEMNIST
 
     Args:
         clients: (list, ndarray, string) ids of the clients to load
-        frac: fraction of the data to sample
+        frac (float): fraction of the data to sample
 
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
@@ -117,12 +202,12 @@ def load_data(clients, frac=1.0):
 
     # If multiple clients are passed, and the number of clients is > number of
     # processes define in the config, use multiprocessing to load the data
-    #  elif isinstance(clients, (ndarray, list)):
-    #      pass
+    elif isinstance(clients, (ndarray, list)):
+        trn_x, trn_y, tst_x, tst_y = _load_multi_clients(clients=clients)
 
     # Single client id has been passed
     elif isinstance(clients, str):
-        trn_x, trn_y, tst_x, tst_y = load_single_client(client_id=clients)
+        trn_x, trn_y, tst_x, tst_y = _load_single_client(client_id=clients)
 
     else:
         raise NotImplementedError('clients: {} not supported'.format(clients))
