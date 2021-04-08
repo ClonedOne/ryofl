@@ -4,7 +4,7 @@ import numpy as np
 
 from ryofl import common
 from ryofl import generate_datasets
-from ryofl.data import femnist
+from ryofl.data import femnist, cifar
 
 
 # Test the existence of dataset files
@@ -74,20 +74,65 @@ def test_load_multiple_clients_femnist():
     tst_y_acc = []
 
     for client_id in test_clients:
-        trn_x, trn_y, tst_x, tst_y = femnist._load_single_client(client_id=client_id)
+        trn_x, trn_y, tst_x, tst_y = femnist._load_single_client(
+            client_id=client_id)
 
         trn_x_acc.append(trn_x)
         trn_y_acc.append(trn_y)
         tst_x_acc.append(tst_x)
         tst_y_acc.append(tst_y)
 
+    trn_x = np.concatenate(trn_x_acc)
+    trn_y = np.concatenate(trn_y_acc)
+    tst_x = np.concatenate(tst_x_acc)
+    tst_y = np.concatenate(tst_y_acc)
+
+    trn_xm, trn_ym, tst_xm, tst_ym = femnist._load_multi_clients(
+        clients=test_clients)
+
+    assert np.array_equal(trn_x, trn_xm)
+    assert np.array_equal(tst_x, tst_xm)
+    assert np.array_equal(trn_y, trn_ym)
+    assert np.array_equal(tst_y, tst_ym)
+
+
+def test_load_multiple_clients_cifar():
+    clients = ['99', '100', '101', '102', '103']
+    trn_x_acc = []
+    trn_y_acc = []
+    tst_x_acc = []
+    tst_y_acc = []
+
+    train_pth = os.path.join(common.image_data_dir,
+                             'datasets', 'fed_cifar100_train.h5')
+    test_pth = os.path.join(common.image_data_dir,
+                            'datasets', 'fed_cifar100_test.h5')
+    trn_file = h5py.File(train_pth, 'r')
+    tst_file = h5py.File(test_pth, 'r')
+
+    for client_id in clients:
+        trn_cli = trn_file['examples'][client_id]
+        labels_trn = trn_cli['label'][()]
+        matrix_trn = trn_cli['image'][()]
+
+        # Accumulate
+        trn_x_acc.append(matrix_trn)
+        trn_y_acc.append(labels_trn)
+
+        # Cifar train cleints are a superset of the test ones
+        if client_id in tst_file['examples']:
+            tst_cli = tst_file['examples'][client_id]
+            matrix_tst = tst_cli['image'][()]
+            labels_tst = tst_cli['label'][()]
+            tst_x_acc.append(matrix_tst)
+            tst_y_acc.append(labels_tst)
 
     trn_x = np.concatenate(trn_x_acc)
     trn_y = np.concatenate(trn_y_acc)
     tst_x = np.concatenate(tst_x_acc)
     tst_y = np.concatenate(tst_y_acc)
 
-    trn_xm, trn_ym, tst_xm, tst_ym = femnist._load_multi_clients(clients=test_clients)
+    trn_xm, trn_ym, tst_xm, tst_ym = cifar._load_multi_clients(clients)
 
     assert np.array_equal(trn_x, trn_xm)
     assert np.array_equal(tst_x, tst_xm)
