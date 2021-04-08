@@ -49,13 +49,10 @@ def _load_full(base_dir=''):
 
     for client_id in sorted(trn_file['examples']):
         trn_cli = trn_file['examples'][client_id]
-        tst_cli = tst_file['examples'][client_id]
 
-        # True labels
+        # Extract labels and data
         labels_trn = trn_cli['label'][()]
-
-        # Insert channels axis
-        matrix_trn = trn_cli['pixels'][()]
+        matrix_trn = trn_cli['image'][()]
 
         # Accumulate
         trn_x_acc.append(matrix_trn)
@@ -63,7 +60,8 @@ def _load_full(base_dir=''):
 
         # Cifar train cleints are a superset of the test ones
         if client_id in tst_file['examples']:
-            matrix_tst = tst_cli['pixels'][()]
+            tst_cli = tst_file['examples'][client_id]
+            matrix_tst = tst_cli['image'][()]
             labels_tst = tst_cli['label'][()]
             tst_x_acc.append(matrix_tst)
             tst_y_acc.append(labels_tst)
@@ -158,10 +156,14 @@ def _load_data_handler(in_data):
         tst_x_acc.append(tst_x)
         tst_y_acc.append(tst_y)
 
-    trn_x = np.concatenate([t for t in trn_x_acc if t.size != 0])
-    trn_y = np.concatenate([t for t in trn_y_acc if t.size != 0])
-    tst_x = np.concatenate([t for t in tst_x_acc if t.size != 0])
-    tst_y = np.concatenate([t for t in tst_y_acc if t.size != 0])
+    trn_x_acc = [t for t in trn_x_acc if t.size != 0]
+    trn_y_acc = [t for t in trn_y_acc if t.size != 0]
+    tst_x_acc = [t for t in tst_x_acc if t.size != 0]
+    tst_y_acc = [t for t in tst_y_acc if t.size != 0]
+    trn_x = np.concatenate(trn_x_acc) if len(trn_x_acc) > 0 else np.array([])
+    trn_y = np.concatenate(trn_y_acc) if len(trn_y_acc) > 0 else np.array([])
+    tst_x = np.concatenate(tst_x_acc) if len(tst_x_acc) > 0 else np.array([])
+    tst_y = np.concatenate(tst_y_acc) if len(tst_y_acc) > 0 else np.array([])
 
     return trn_x, trn_y, tst_x, tst_y
 
@@ -202,10 +204,14 @@ def _load_multi_clients(clients, base_dir=''):
         tst_x_acc.append(ret[2])
         tst_y_acc.append(ret[3])
 
-    trn_x = np.concatenate([t for t in trn_x_acc if t.size != 0])
-    trn_y = np.concatenate([t for t in trn_y_acc if t.size != 0])
-    tst_x = np.concatenate([t for t in tst_x_acc if t.size != 0])
-    tst_y = np.concatenate([t for t in tst_y_acc if t.size != 0])
+    trn_x_acc = [t for t in trn_x_acc if t.size != 0]
+    trn_y_acc = [t for t in trn_y_acc if t.size != 0]
+    tst_x_acc = [t for t in tst_x_acc if t.size != 0]
+    tst_y_acc = [t for t in tst_y_acc if t.size != 0]
+    trn_x = np.concatenate(trn_x_acc) if len(trn_x_acc) > 0 else np.array([])
+    trn_y = np.concatenate(trn_y_acc) if len(trn_y_acc) > 0 else np.array([])
+    tst_x = np.concatenate(tst_x_acc) if len(tst_x_acc) > 0 else np.array([])
+    tst_y = np.concatenate(tst_y_acc) if len(tst_y_acc) > 0 else np.array([])
 
     return trn_x, trn_y, tst_x, tst_y
 
