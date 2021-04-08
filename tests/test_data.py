@@ -1,5 +1,6 @@
 import os
 import h5py
+import numpy as np
 
 from ryofl import common
 from ryofl import generate_datasets
@@ -51,3 +52,45 @@ def test_load_single_client_femnist():
     assert tx.shape[1:3] == timages.shape[1:]
     assert tx.shape[3] == 1
     assert ty.shape == tlabels.shape
+
+
+def test_load_multiple_clients_femnist():
+    test_clients = [
+        'f0000_14',
+        'f0001_41',
+        'f0005_26',
+        'f0006_12',
+        'f0008_45',
+        'f0011_13',
+        'f0014_19',
+        'f0016_39',
+        'f0017_07',
+        'f0022_10'
+    ]
+
+    trn_x_acc = []
+    trn_y_acc = []
+    tst_x_acc = []
+    tst_y_acc = []
+
+    for client_id in test_clients:
+        trn_x, trn_y, tst_x, tst_y = femnist._load_single_client(client_id=client_id)
+
+        trn_x_acc.append(trn_x)
+        trn_y_acc.append(trn_y)
+        tst_x_acc.append(tst_x)
+        tst_y_acc.append(tst_y)
+
+
+    trn_x = np.concatenate(trn_x_acc)
+    trn_y = np.concatenate(trn_y_acc)
+    tst_x = np.concatenate(tst_x_acc)
+    tst_y = np.concatenate(tst_y_acc)
+
+    trn_xm, trn_ym, tst_xm, tst_ym = femnist._load_multi_clients(clients=test_clients)
+
+    assert np.array_equal(trn_x, trn_xm)
+    assert np.array_equal(tst_x, tst_xm)
+    assert np.array_equal(trn_y, trn_ym)
+    assert np.array_equal(tst_y, tst_ym)
+

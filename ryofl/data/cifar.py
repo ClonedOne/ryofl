@@ -12,7 +12,7 @@ from ryofl import common
 
 
 def _load_full(base_dir=''):
-    """ Load the entire FEMNIST dataset
+    """ Load the entire cifar100 dataset
 
     Args:
         base_dir (str): overwrite default data dir
@@ -29,8 +29,8 @@ def _load_full(base_dir=''):
     else:
         _dir = base_dir
 
-    trn_pth = os.path.join(_dir, 'fed_emnist_digitsonly_train.h5')
-    tst_pth = os.path.join(_dir, 'fed_emnist_digitsonly_test.h5')
+    trn_pth = os.path.join(_dir, 'fed_cifar100_train.h5')
+    tst_pth = os.path.join(_dir, 'fed_cifar100_test.h5')
     trn_x_acc = []
     trn_y_acc = []
     tst_x_acc = []
@@ -53,17 +53,20 @@ def _load_full(base_dir=''):
 
         # True labels
         labels_trn = trn_cli['label'][()]
-        labels_tst = tst_cli['label'][()]
 
         # Insert channels axis
-        matrix_trn = np.expand_dims(trn_cli['pixels'][()], axis=-1)
-        matrix_tst = np.expand_dims(tst_cli['pixels'][()], axis=-1)
+        matrix_trn = trn_cli['pixels'][()]
 
         # Accumulate
         trn_x_acc.append(matrix_trn)
         trn_y_acc.append(labels_trn)
-        tst_x_acc.append(matrix_tst)
-        tst_y_acc.append(labels_tst)
+
+        # Cifar train cleints are a superset of the test ones
+        if client_id in tst_file['examples']:
+            matrix_tst = tst_cli['pixels'][()]
+            labels_tst = tst_cli['label'][()]
+            tst_x_acc.append(matrix_tst)
+            tst_y_acc.append(labels_tst)
 
     trn_x = np.concatenate(trn_x_acc)
     trn_y = np.concatenate(trn_y_acc)
@@ -74,7 +77,7 @@ def _load_full(base_dir=''):
 
 
 def _load_single_client(client_id, base_dir=''):
-    """ Load the FEMNIST data for a single client
+    """ Load the CIFAR100 data for a single client
 
     Args:
         client_id (str): id of the client's data to load
@@ -85,16 +88,39 @@ def _load_single_client(client_id, base_dir=''):
     """
 
     if not base_dir:
-        _dir = common.femnist_clients_dir
+        _dir = common.cifar100_clients_dir
     else:
         _dir = base_dir
 
     client_f = os.path.join(_dir, '{}_cli-' + str(client_id) + '_{}.npy')
 
-    trn_x = np.load(client_f.format('trn', 'x'), allow_pickle=True)
-    trn_y = np.load(client_f.format('trn', 'y'), allow_pickle=True)
-    tst_x = np.load(client_f.format('tst', 'x'), allow_pickle=True)
-    tst_y = np.load(client_f.format('tst', 'y'), allow_pickle=True)
+    trn_x_file = client_f.format('trn', 'x')
+    if os.path.isfile(trn_x_file):
+        trn_x = np.load(trn_x_file, allow_pickle=True)
+    else:
+        print('WARNING data file {} not found'.format(trn_x_file))
+        trn_x = np.array([])
+
+    trn_y_file = client_f.format('trn', 'y')
+    if os.path.isfile(trn_y_file):
+        trn_y = np.load(trn_y_file, allow_pickle=True)
+    else:
+        print('WARNING data file {} not found'.format(trn_y_file))
+        trn_y = np.array([])
+
+    tst_x_file = client_f.format('tst', 'x')
+    if os.path.isfile(tst_x_file):
+        tst_x = np.load(tst_x_file, allow_pickle=True)
+    else:
+        print('WARNING data file {} not found'.format(tst_x_file))
+        tst_x = np.array([])
+
+    tst_y_file = client_f.format('tst', 'y')
+    if os.path.isfile(tst_y_file):
+        tst_y = np.load(tst_y_file, allow_pickle=True)
+    else:
+        print('WARNING data file {} not found'.format(tst_y_file))
+        tst_y = np.array([])
 
     return trn_x, trn_y, tst_x, tst_y
 
@@ -153,7 +179,7 @@ def _load_multi_clients(clients, base_dir=''):
     """
 
     if not base_dir:
-        _dir = common.femnist_clients_dir
+        _dir = common.cifar100_clients_dir
     else:
         _dir = base_dir
 
@@ -185,7 +211,7 @@ def _load_multi_clients(clients, base_dir=''):
 
 
 def load_data(clients, frac=1.0):
-    """ Load data wrapper for FEMNIST
+    """ Load data wrapper for CIFAR100
 
     Args:
         clients: (list, ndarray, string) ids of the clients to load
@@ -224,4 +250,3 @@ def load_data(clients, frac=1.0):
             tst_y, test_size=frac, random_state=0, stratify=tst_y)
 
     return trn_x, trn_y, tst_x, tst_y
-
