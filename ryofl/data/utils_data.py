@@ -1,7 +1,8 @@
-import os
-import h5py
+"""
+Generic utilities related to handling the datasets
+"""
 
-from ryofl.data import femnist
+from ryofl.data import femnist, cifar
 
 
 def load_dataset(dataset, clients=None, fraction=1.0):
@@ -25,8 +26,7 @@ def load_dataset(dataset, clients=None, fraction=1.0):
         return femnist.load_data(clients, fraction)
 
     elif dataset == 'cifar100':
-        #  cifar.load_client_data()
-        pass
+        return cifar.load_data(clients, fraction)
 
     else:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))

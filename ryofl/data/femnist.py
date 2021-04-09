@@ -1,3 +1,7 @@
+"""
+This module deals with handling the FEMNIST dataset.
+"""
+
 import os
 
 from multiprocessing import Pool
@@ -222,6 +226,11 @@ def load_data(clients, frac=1.0):
             tst_x, test_size=frac, random_state=0, stratify=tst_y)
         _, tst_y = train_test_split(
             tst_y, test_size=frac, random_state=0, stratify=tst_y)
+
+    # Before returning the data, we need to transform the images from TF to torch
+    # formatting. That is from NxHxWxC to NxCxHxW.
+    trn_x = trn_x.transpose(0, 3, 1, 2)
+    tst_x = tst_x.transpose(0, 3, 1, 2)
 
     return trn_x, trn_y, tst_x, tst_y
 
