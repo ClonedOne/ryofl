@@ -4,18 +4,30 @@ This module deals with handling the FEMNIST dataset.
 
 import os
 
+from typing import Tuple
 from multiprocessing import Pool
 
 import h5py
 import numpy as np
+import torchvision.transforms as transforms
 
 from numpy import ndarray
 from sklearn.model_selection import train_test_split
 
 from ryofl import common
 
+# Medata
+channels = 1
+classes = 10
 
-def _load_full(base_dir=''):
+# Image transformations
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    #  transforms.Normalize((0.1307,), (0.3081,))
+])
+
+
+def _load_full(base_dir: str = ''):
     """ Load the entire FEMNIST dataset
 
     Args:
@@ -77,7 +89,7 @@ def _load_full(base_dir=''):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def _load_single_client(client_id, base_dir=''):
+def _load_single_client(client_id: str, base_dir: str = ''):
     """ Load the FEMNIST data for a single client
 
     Args:
@@ -103,7 +115,7 @@ def _load_single_client(client_id, base_dir=''):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def _load_data_handler(in_data):
+def _load_data_handler(in_data: tuple):
     """ Helper function for multiprocess data loading
 
     Args:
@@ -144,7 +156,7 @@ def _load_data_handler(in_data):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def _load_multi_clients(clients, base_dir=''):
+def _load_multi_clients(clients, base_dir: str = ''):
     """ Use multiprocessing to load the data for multiple clients
 
     Args:
@@ -188,7 +200,10 @@ def _load_multi_clients(clients, base_dir=''):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def load_data(clients, frac=1.0):
+def load_data(
+    clients,
+    frac: float = 1.0
+) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
     """ Load data wrapper for FEMNIST
 
     Args:
@@ -229,8 +244,7 @@ def load_data(clients, frac=1.0):
 
     # Before returning the data, we need to transform the images from TF to torch
     # formatting. That is from NxHxWxC to NxCxHxW.
-    trn_x = trn_x.transpose(0, 3, 1, 2)
-    tst_x = tst_x.transpose(0, 3, 1, 2)
+    #  trn_x = trn_x.transpose(0, 3, 1, 2)
+    #  tst_x = tst_x.transpose(0, 3, 1, 2)
 
     return trn_x, trn_y, tst_x, tst_y
-
