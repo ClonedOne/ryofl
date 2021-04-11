@@ -1,9 +1,9 @@
 import click
 
 from ryofl import common
+from ryofl.fl import training
 from ryofl.data import utils_data
 from ryofl.models import utils_model
-from ryofl.training import standalone
 
 
 @click.group()
@@ -28,7 +28,24 @@ def cli():
 @click.option(
     '--epochs', help='number of training epochs', type=int, default=10
 )
-def train_standalone(dataset: str, model_id: str, fraction: float, epochs: int):
+@click.option(
+    '--batch', help='size of mini batch', type=int, default=32
+)
+@click.option(
+    '--learning_rate', help='optimizer learning rate', type=float, default=0.001
+)
+@click.option(
+    '--momentum', help='optimizer momentum value', type=float, default=0.9
+)
+def train_standalone(
+    dataset: str,
+    model_id: str,
+    fraction: float,
+    epochs: int,
+    batch: int,
+    learning_rate: float,
+    momentum: float
+):
     """ Train a standalone model on the dataset
 
     Will perform normal training on a single client.
@@ -38,6 +55,9 @@ def train_standalone(dataset: str, model_id: str, fraction: float, epochs: int):
         model_id (str): identifier of the model to train
         fraction (float): fraction of the dataset to use
         epochs (int): number of training epochs
+        batch (int): size of mini batch
+        learning_rate (float): optimizer learning rate
+        momentum (float): optimizer momentum value
     """
 
     # Load the dataset
@@ -52,10 +72,30 @@ def train_standalone(dataset: str, model_id: str, fraction: float, epochs: int):
     channels, classes, transform = utils_data.get_metadata(dataset=dataset)
 
     # Define the model
-    cnn = utils_model.build_model(model_id, channels, classes)
+    model = utils_model.build_model(model_id, channels, classes)
+    print('Model built:\n', model)
 
     # Train the model
-    standalone.standalone_training(cnn, trn_x, trn_y, epochs, transform)
+    training.train_epochs(
+        model=model,
+        trn_x=trn_x,
+        trn_y=trn_y,
+        transform=transform,
+        epochs=epochs,
+        batch=batch,
+        lrn_rate=learning_rate,
+        momentum=momentum
+    )
+
+    # Evaluation
+    accuracy = training.eval_model(
+        model=model,
+        tst_x=tst_x,
+        tst_y=tst_y,
+        transform=transform,
+        batch=batch
+    )
+    print('Model accuracy on test set: {:.4f}'.format(accuracy))
 
 
 @click.command()

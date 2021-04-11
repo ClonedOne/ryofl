@@ -81,10 +81,12 @@ def _load_full(base_dir: str = ''):
         tst_x_acc.append(matrix_tst)
         tst_y_acc.append(labels_tst)
 
-    trn_x = np.concatenate(trn_x_acc)
-    trn_y = np.concatenate(trn_y_acc)
-    tst_x = np.concatenate(tst_x_acc)
-    tst_y = np.concatenate(tst_y_acc)
+    trn_x: ndarray = np.concatenate(trn_x_acc)
+    trn_y: ndarray = np.concatenate(trn_y_acc)
+    tst_x: ndarray = np.concatenate(tst_x_acc)
+    tst_y: ndarray = np.concatenate(tst_y_acc)
+    trn_y = trn_y.astype(np.int64, copy=False)
+    tst_y = tst_y.astype(np.int64, copy=False)
 
     return trn_x, trn_y, tst_x, tst_y
 
@@ -107,10 +109,12 @@ def _load_single_client(client_id: str, base_dir: str = ''):
 
     client_f = os.path.join(_dir, '{}_cli-' + str(client_id) + '_{}.npy')
 
-    trn_x = np.load(client_f.format('trn', 'x'), allow_pickle=True)
-    trn_y = np.load(client_f.format('trn', 'y'), allow_pickle=True)
-    tst_x = np.load(client_f.format('tst', 'x'), allow_pickle=True)
-    tst_y = np.load(client_f.format('tst', 'y'), allow_pickle=True)
+    trn_x: ndarray = np.load(client_f.format('trn', 'x'), allow_pickle=True)
+    trn_y: ndarray = np.load(client_f.format('trn', 'y'), allow_pickle=True)
+    tst_x: ndarray = np.load(client_f.format('tst', 'x'), allow_pickle=True)
+    tst_y: ndarray = np.load(client_f.format('tst', 'y'), allow_pickle=True)
+    trn_y = trn_y.astype(np.int64, copy=False)
+    tst_y = tst_y.astype(np.int64, copy=False)
 
     return trn_x, trn_y, tst_x, tst_y
 
@@ -192,10 +196,12 @@ def _load_multi_clients(clients, base_dir: str = ''):
         tst_x_acc.append(ret[2])
         tst_y_acc.append(ret[3])
 
-    trn_x = np.concatenate([t for t in trn_x_acc if t.size != 0])
-    trn_y = np.concatenate([t for t in trn_y_acc if t.size != 0])
-    tst_x = np.concatenate([t for t in tst_x_acc if t.size != 0])
-    tst_y = np.concatenate([t for t in tst_y_acc if t.size != 0])
+    trn_x: ndarray = np.concatenate([t for t in trn_x_acc if t.size != 0])
+    trn_y: ndarray = np.concatenate([t for t in trn_y_acc if t.size != 0])
+    tst_x: ndarray = np.concatenate([t for t in tst_x_acc if t.size != 0])
+    tst_y: ndarray = np.concatenate([t for t in tst_y_acc if t.size != 0])
+    trn_y = trn_y.astype(np.int64, copy=False)
+    tst_y = tst_y.astype(np.int64, copy=False)
 
     return trn_x, trn_y, tst_x, tst_y
 
@@ -246,5 +252,7 @@ def load_data(
     # formatting. That is from NxHxWxC to NxCxHxW.
     #  trn_x = trn_x.transpose(0, 3, 1, 2)
     #  tst_x = tst_x.transpose(0, 3, 1, 2)
+    trn_y = trn_y.astype(np.int64, copy=False)
+    tst_y = tst_y.astype(np.int64, copy=False)
 
     return trn_x, trn_y, tst_x, tst_y

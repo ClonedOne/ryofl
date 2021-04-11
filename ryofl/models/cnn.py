@@ -30,10 +30,13 @@ class BaseCNN(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
 
+        # Adaptive max pooling to handle different sizes
+        self.amaxpool = nn.AdaptiveMaxPool2d((5, 7))
+
         # Linear layers
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, self.classes)
+        self.fc1 = nn.Linear(16 * 5 * 7, 400)
+        self.fc2 = nn.Linear(400, 120)
+        self.fc3 = nn.Linear(120, self.classes)
 
     def forward(self, x):
         """ Forward pass of the network
@@ -46,8 +49,9 @@ class BaseCNN(nn.Module):
         """
 
         x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
+        #  x = self.pool(F.relu(self.conv2(x)))
+        x = self.amaxpool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 7)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
