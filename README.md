@@ -52,6 +52,10 @@ where to download the datasets can be changed in the header of the file.
 ## Training protocol
 
 Centralized protocol for federated learning implemented in ryofl:
+![protocol](res/ryofl_protocol.png)
+
+<details>
+<summary>mermaid code for the diagram</summary>
 
 ```mermaid
 sequenceDiagram
@@ -98,3 +102,4 @@ sequenceDiagram
 	
 	end
 
+</details>
