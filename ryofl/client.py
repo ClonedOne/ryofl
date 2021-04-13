@@ -1,14 +1,20 @@
 import click
 
-from ryofl import common
 from ryofl.fl import training
 from ryofl.data import utils_data
+from ryofl.network import flclient
 from ryofl.models import utils_model
 
 
 @click.group()
 def cli():
-    pass
+    """ Run the federated learning client
+    """
+
+
+@click.command()
+def fl():
+    flclient.client()
 
 
 @click.command()
@@ -106,4 +112,5 @@ def train_federated():
 if __name__ == '__main__':
     cli.add_command(train_federated)
     cli.add_command(train_standalone)
+    cli.add_command(fl)
     cli()
