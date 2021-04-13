@@ -1,85 +1,81 @@
-import types
-import socket
-import selectors
+import time
+import threading
+import socketserver
+
 
 HOST = '127.0.0.1'
 PORT = 9999
 
-sel = selectors.DefaultSelector()
+# Current round of federated learning from the point of view of the server
+fl_round_s = 0
+fl_round_s_lock = threading.Lock()
+
+# Dictionary with state of global model
+global_state = {}
+global_state_lock = threading.Lock()
+
+# dictionary of received client models
+cli_model_state = {}
+cli_model_state_lock = threading.Lock()
 
 
-def accept_fn(s):
-    conn, addr = s.accept()
-    print('Connection from: {}'.format(addr))
-    conn.setblocking(False)
+class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
-    data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'')
-    events = selectors.EVENT_READ | selectors.EVENT_WRITE
-    sel.register(conn, events, data=data)
+    def handle(self):
+        """ Handle incoming connections form clients
+
+        There are two distinct steps when a message may arrive from the
+        clients.
+
+        1) The client has just started the current round and is polling to get
+        the state of the global model and the current logical time stamp. In
+        this case the server should respond by sending its state. The state
+        received from the client can be discarded.
+
+        2) The client has computed the local update and is sending it to the
+        server. In this case the server should just acknowledge the operation
+        and save the state received from the client.
+        """
+
+        global fl_round_s
+        global fl_round_s_lock
+
+        data = self.request.recv(1024)
+        #  cur_thread = threading.current_thread()
+        response = data
+        self.request.sendall(response)
+
+        fl_round_s_lock.acquire()
+        try:
+            fl_round_s += 1
+        finally:
+            fl_round_s_lock.release()
 
 
-def service_connection(key, mask):
-
-    s = key.fileobj
-    data = key.data
-
-    if mask & selectors.EVENT_READ:
-        recv_data = s.recv(1024)
-
-        if recv_data:
-            data.outb += recv_data
-
-        else:
-            print('Closing connection to: {}'.format(data.addr))
-            sel.unregister(s)
-            s.close()
-
-    if mask & selectors.EVENT_WRITE:
-        if data.outb:
-            print('echoing: {} - to: {}'.format(repr(data.outb), data.addr))
-            sent = s.send(data.outb)
-            data.outb = data.outb[sent:]
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    pass
 
 
 def serve():
+    global fl_round_s
+    global fl_round_s_lock
+    server = ThreadedTCPServer((HOST, PORT), ThreadedTCPRequestHandler)
 
-    s = socket.socket(socket.AF_INET,  socket.SOCK_STREAM)
-    s.bind((HOST, PORT))
-    s.listen()
-    #  conn, addr = s.accept()
+    with server:
+        #  ip, port = server.server_address
 
-    s.setblocking(False)
-    sel.register(s, selectors.EVENT_READ, data=None)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
 
+        print('Server loop running in thread: {}'.format(server_thread.name))
 
-    while True:
-        events = sel.select(timeout=None)
-        for key, mask in events:
-            if key.data is None:
-                accept_fn(key.fileobj)
+        while 1:
+            time.sleep(1)
+            fl_round_s_lock.acquire()
+            try:
+                print('current value of acc: {}'.format(fl_round_s))
+            finally:
+                fl_round_s_lock.release()
 
-            else:
-                service_connection(key, mask)
-
-    s.close()
-
-#  def serve():
-#
-#      s = socket.socket(socket.AF_INET,  socket.SOCK_STREAM)
-#      s.bind((HOST, PORT))
-#      s.listen()
-#      conn, addr = s.accept()
-#
-#      with conn:
-#          print('Connection from: {}'.format(addr))
-#
-#          while True:
-#              data = conn.recv(1024)
-#
-#              if not data:
-#                  break
-#
-#              conn.sendall(data)
-#
-#      s.close()
-
+        server.shutdown()
