@@ -1,6 +1,9 @@
 import time
+import pickle
 import threading
 import socketserver
+
+from ryofl.network import utils_network
 
 
 HOST = '127.0.0.1'
@@ -40,10 +43,17 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         global fl_round_s
         global fl_round_s_lock
 
-        data = self.request.recv(1024)
+        #  data = self.request.recv(1024)
+        data = utils_network.receive_message(self.request)
         #  cur_thread = threading.current_thread()
+
+        data = pickle.loads(data)
+        data['model_state']['a'] = data['model_state']['a'] - 1
+        data = pickle.dumps(data)
+
         response = data
-        self.request.sendall(response)
+        utils_network.send_message(self.request, response)
+        #  self.request.sendall(response)
 
         fl_round_s_lock.acquire()
         try:

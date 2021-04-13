@@ -3,9 +3,12 @@ import socket
 
 import numpy as np
 
+from ryofl.network import utils_network
+
 
 HOST = '127.0.0.1'
 PORT = 9999
+
 
 
 def client():
@@ -30,9 +33,12 @@ def client():
 
     s.connect((HOST, PORT))
     dmp = pickle.dumps(c)
-    s.sendall(dmp)
+    #  s.sendall(dmp)
+    utils_network.send_message(s, dmp)
 
-    data = s.recv(1024)
+    #  data = s.recv(4)
+    #  data += s.recv(1000)
+    data = utils_network.receive_message(s)
     d = pickle.loads(data)
     print('Received', d)
 
