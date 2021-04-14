@@ -95,13 +95,13 @@ def make_configs(
             'epochs': epochs,
             'batch': batch,
             'learning_rate': learning_rate,
-            'momentum': momentum
+            'momentum': momentum,
+            'srv_host': common.SRV_HOST,
+            'srv_port': common.SRV_PORT
         }
 
         # Server only configuration
         if i == common.SRV_ID:
-            cfg_dict['srv_host'] = common.SRV_HOST
-            cfg_dict['srv_port'] = common.SRV_PORT
             cfg_dict['num_clients'] = clients
             cfg_dict['min_clients'] = min_clients
             cfg_dict['rnd_clients'] = rnd_clients

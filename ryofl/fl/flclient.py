@@ -13,36 +13,50 @@ HOST = '127.0.0.1'
 PORT = 9999
 
 
-def client():
+def client(cfg: dict):
+    """ Federate learning client
+
+    Args:
+        cfg (dict): configuration dictionary
+    """
+
+    print('Starting federated learning client. Received config: {}'.format(cfg))
+
+    # Unpacking
+    idcli = cfg['idcli']
+    dataset = cfg['dataset']
+    model_id = cfg['model_id']
+    fraction = cfg['fraction']
+    epochs = cfg['epochs']
+    batch = cfg['batch']
+    learning_rate = cfg['learning_rate']
+    momentum = cfg['momentum']
+    srv_host = cfg['srv_host']
+    srv_port = cfg['srv_port']
+
+    # Initialize loop variables
+    fl_round_c = 0
+    received = False
+    updated = False
+
     a = np.array([
         [[1.2, 0.5], [2.3, 1.1]],
         [[4.5, 6.7], [7.9, 2.1]],
         [[8.6, 10], [11.1, 3.1]]
     ])
-    c = {
-        'idcli': 1,
-        'fl_round': 0,
-        'updated': True,
-        'model_state': {
-            'size': a.shape,
-            'a': a,
-            'b': (a - 1)[:2]
-        }
-    }
+    c = utils_network.pack_message(
+        idc=idcli, fl_r=fl_round_c, upd=updated, m_state=a)
     print('sending', c)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     s.connect((HOST, PORT))
     dmp = pickle.dumps(c)
-    #  s.sendall(dmp)
     utils_network.send_message(s, dmp)
 
-    #  data = s.recv(4)
-    #  data += s.recv(1000)
     data = utils_network.receive_message(s)
     d = pickle.loads(data)
-    print('Received', d)
+    print('Received', d.keys())
 
     s.close()
 

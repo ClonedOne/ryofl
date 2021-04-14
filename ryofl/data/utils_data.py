@@ -67,6 +67,31 @@ def get_metadata(dataset: str) -> Tuple[int, int, Any]:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))
 
 
+def get_client_ids(dataset: str, trn: bool = True, tst: bool = True) -> Tuple:
+    """ Return dataset specific metadata information
+
+    Args:
+        dataset: identifier of the dataset
+        trn (bool): if true return the list for train ids
+        tst (bool): if true return the list for test ids
+
+    Raises:
+        NotImplementedError: dataset must belong to list of supported datasets
+
+    Returns
+        (int, int, Any): channels, classes, torchvision transformations
+    """
+
+    if dataset == 'femnist':
+        return femnist.get_client_ids(trn=trn, tst=tst)
+
+    elif dataset == 'cifar100':
+        return cifar.get_client_ids(trn=trn, tst=tst)
+
+    else:
+        raise NotImplementedError('Dataset {} not supported'.format(dataset))
+
+
 def make_dataloader(
     x: Iterable,
     y: Iterable,

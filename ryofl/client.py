@@ -1,3 +1,4 @@
+import json
 import click
 
 from ryofl.fl import flclient
@@ -10,8 +11,13 @@ def cli():
 
 
 @click.command()
-def fl():
-    flclient.client()
+@click.option(
+    '--config', help='client configuration file',
+    type=str, prompt=True
+)
+def fl(config):
+    cfg = json.load(open(config, 'r', encoding='utf-8'))
+    flclient.client(cfg)
 
 
 @click.command()

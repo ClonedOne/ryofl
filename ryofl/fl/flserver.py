@@ -1,14 +1,16 @@
+import copy
 import time
 import pickle
 import threading
 import socketserver
 
+from ryofl.data import utils_data
 from ryofl.models import utils_model
 from ryofl.network import utils_network
 
 
 # Current round of federated learning from the point of view of the server
-fl_round_s = 0
+fl_round_s = 1
 fl_round_s_lock = threading.Lock()
 
 # Dictionary with state of global model
@@ -125,6 +127,17 @@ def serve(cfg: dict):
 
     print('Starting federated learning server. Received config: {}'.format(cfg))
 
+    # Unpacking
+    dataset = cfg['dataset']
+    model_id = cfg['model_id']
+    fraction = cfg['fraction']
+    epochs = cfg['epochs']
+    batch = cfg['batch']
+    learning_rate = cfg['learning_rate']
+    momentum = cfg['momentum']
+    srv_host = cfg['srv_host']
+    srv_port = cfg['srv_port']
+
     # Global configuration values
     global SRV_ID, SRV_HOST, SRV_PORT, NUMCLIENTS, MINCLIENTS, RNDCLIENTS
     SRV_ID = cfg['idcli']
@@ -139,9 +152,16 @@ def serve(cfg: dict):
     global global_state, global_state_lock
     global cli_model_state, cli_model_state_lock
 
+    # Load test data
+    _, _, tst_x, tst_y = utils_data.load_dataset(
+        dataset=dataset, clients=None, fraction=fraction)
+    channels, classes, transform = utils_data.get_metadata(dataset=dataset)
+    del _
+
     # Initialize global model
-    #  global_model = utils_model.build_model(model_id, channels, classes)
-    #  print('Model built:\n', global_model)
+    global_model = utils_model.build_model(model_id, channels, classes)
+    global_state = copy.deepcopy(global_model.state_dict())
+    print('Model built:\n', global_state)
 
     # Initialize server
     server = ThreadedTCPServer((SRV_HOST, SRV_PORT), ThreadedTCPRequestHandler)
