@@ -1,7 +1,23 @@
+"""
+General utilities for communications over the network
+"""
+
 import struct
+import pickle
+
+from typing import Any
 
 
-def send_message(s, msg):
+def send_message(s: Any, msg: bytes):
+    """ Send a message over the network
+
+    Uses an open socket to send a message encoded as a byte array.
+
+    Args:
+        s (Any): open socket
+        msg (bytes): byte array to send, could be a numpy array
+    """
+
     msg_len = len(msg)
 
     # !Q is network byte order for a long long type
@@ -9,7 +25,18 @@ def send_message(s, msg):
     s.sendall(msg)
 
 
-def receive_message(s):
+def receive_message(s: Any) -> bytes:
+    """ Receive a message from the network
+
+    Uses an open socket ot receive a message
+
+    Args:
+        s (Any): open socket
+
+    Returns:
+        bytes: received bytes
+    """
+
     # !Q is network byte order for a long long type
     # struct.unpack always returns a tuple
     msg_len = struct.unpack('!Q', s.recv(8))[0]
@@ -23,4 +50,35 @@ def receive_message(s):
 
     return data
 
+
+def pack_message(idc: int, fl_r: int, upd: bool, m_state: dict) -> bytes:
+    """ Create the data message bytes
+
+    Messages from clients have the form:
+        data = {
+            'idcli': int,
+            'fl_round': int,
+            'updated': bool,
+            'model_state': dict
+        }
+
+    Args:
+        idc (int): identifier of the participant
+        fl_r (int): round number
+        upd (bool): model update flag, used by clients
+        m_state (dict): state of the model
+
+    Returns:
+        bytes: message bytes
+    """
+
+    data = {
+        'idcli': idc,
+        'fl_round': fl_r,
+        'updated': upd,
+        'model_state': m_state
+    }
+
+    data_b = pickle.dumps(data)
+    return data_b
 

@@ -19,8 +19,8 @@ def client():
     ])
     c = {
         'idcli': 1,
-        'fl_round_c': 12,
-        'updated': False,
+        'fl_round': 0,
+        'updated': True,
         'model_state': {
             'size': a.shape,
             'a': a,
