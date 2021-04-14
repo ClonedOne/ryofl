@@ -1,6 +1,6 @@
 import click
 
-from ryofl.network import flserver
+from ryofl.fl import flserver
 
 
 @click.group()
@@ -17,5 +17,3 @@ def fl():
 if __name__ == '__main__':
     main.add_command(fl)
     main()
-
-
