@@ -3,14 +3,9 @@ import pickle
 import threading
 import socketserver
 
+from ryofl.models import utils_model
 from ryofl.network import utils_network
 
-
-HOST = '127.0.0.1'
-PORT = 9999
-MINCLIENTS = 4
-RNDCLIENTS = 3
-SRVID = 0
 
 # Current round of federated learning from the point of view of the server
 fl_round_s = 0
@@ -52,12 +47,10 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         """
 
         # Global variables and locks that will be accessed
-        global fl_round_s
-        global global_state
-        global cli_model_state
-        global fl_round_s_lock
-        global global_state_lock
-        global cli_model_state_lock
+        global SRV_ID
+        global fl_round_s, fl_round_s_lock
+        global global_state, global_state_lock
+        global cli_model_state, cli_model_state_lock
 
         # Receive the message bytes
         data = utils_network.receive_message(self.request)
@@ -78,7 +71,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             if fl_round_c != fl_round_s:
                 # Interaction 1)
                 srv_message = utils_network.pack_message(
-                    idc=SRVID,
+                    idc=SRV_ID,
                     fl_r=fl_round_s,
                     upd=True,
                     m_state=global_state
@@ -91,7 +84,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
                 # This will act as ack
                 srv_message = utils_network.pack_message(
-                    idc=SRVID,
+                    idc=SRV_ID,
                     fl_r=fl_round_s,
                     upd=False,
                     m_state={}
@@ -116,7 +109,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     allow_reuse_address = True
 
 
-def serve():
+def serve(cfg: dict):
     """ Federated learning server
 
     This server will act as aggregator for the updates coming from each client.
@@ -125,20 +118,37 @@ def serve():
     - if the client is connecting for the second time, store the state of the client model;
     - when enough clients have sent their state, aggregate them and update the global model;
     - evaluate current state of global model on test set.
+
+    Args:
+        cfg (dict): configuration dictionary
     """
 
+    print('Starting federated learning server. Received config: {}'.format(cfg))
+
+    # Global configuration values
+    global SRV_ID, SRV_HOST, SRV_PORT, NUMCLIENTS, MINCLIENTS, RNDCLIENTS
+    SRV_ID = cfg['idcli']
+    SRV_HOST = cfg['srv_host']
+    SRV_PORT = cfg['srv_port']
+    NUMCLIENTS = cfg['num_clients']
+    MINCLIENTS = cfg['min_clients']
+    RNDCLIENTS = cfg['rnd_clients']
+
     # Global variables and locks that will be accessed
-    global fl_round_s
-    global global_state
-    global cli_model_state
-    global fl_round_s_lock
-    global global_state_lock
-    global cli_model_state_lock
+    global fl_round_s, fl_round_s_lock
+    global global_state, global_state_lock
+    global cli_model_state, cli_model_state_lock
+
+    # Initialize global model
+    #  global_model = utils_model.build_model(model_id, channels, classes)
+    #  print('Model built:\n', global_model)
 
     # Initialize server
-    server = ThreadedTCPServer((HOST, PORT), ThreadedTCPRequestHandler)
+    server = ThreadedTCPServer((SRV_HOST, SRV_PORT), ThreadedTCPRequestHandler)
 
+    # Server main loop
     with server:
+
         # Start the server thread
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.daemon = True
