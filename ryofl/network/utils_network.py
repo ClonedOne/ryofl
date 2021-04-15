@@ -40,7 +40,6 @@ def receive_message(s: Any) -> bytes:
     # !Q is network byte order for a long long type
     # struct.unpack always returns a tuple
     msg_len = struct.unpack('!Q', s.recv(8))[0]
-    print('Incoming message length: {}'.format(msg_len))
 
     data = b''
     remaining_bytes = msg_len

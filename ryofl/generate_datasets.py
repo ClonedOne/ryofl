@@ -28,6 +28,7 @@ def _generate_femnist(force=False):
     """
 
     print('Generating FEMNIST data')
+    os.makedirs(common.image_data_dir, exist_ok=True)
 
     # Download the dataset if not found
     tff.simulation.datasets.emnist.load_data(
