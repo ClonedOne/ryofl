@@ -24,7 +24,19 @@ realistic, such as:
    points would be added periodically.
 
 
-## Setup
+
+## Dependencies
+
+Make sure the package `liblzma-dev` is installed in your system.
+(`sudo apt install liblzma-dev`)
+
+Pytorch CPU needs to be installed following the instructions provided
+on the official website:
+
+```
+pip install torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+
+```
 
 Before continuing please make sure you have setup the correct paths in
 `ryofl/common.py`.
@@ -41,12 +53,17 @@ Testing is done via `pytest`.  Tests will be automatically discovered by looking
 in the `tests/` directory for files and functions having `test` as a prefix.
 
 
-## Data
+## Obtaining the datasets
 
 Use `python ryofl/generate_datasets.py` to download the datasets. The location
-where to download the datasets can be changed in the header of the file. 
+of the downloaded files is specified in `ryofl/common.py`.
 
-**Note this is the only part of the code which depends on Tensorflow**
+This script will also split the datasets into per-client chunks, based on the
+specific logic of each dataset, and populate sub-directories with the chunk
+numpy files.
+
+**Note:** this is the only part of the code which depends on
+Tensorflow-Federated.
 
 
 ## Training protocol
@@ -62,7 +79,7 @@ sequenceDiagram
     participant S as Server
 	participant C as Client
 
-	Note left of S: Read PORT, IP, MINCLIENTS, RNDCLIENTS.<br/>fl_round_s = 0<br/>connected_clis = []<br/>global_model = new()<br/>cli_models = {}
+	Note left of S: Read PORT, IP, MINCLIENTS, RNDCLIENTS.<br/>fl_round_s = 0<br/>global_model = new()<br/>cli_models = {}
 	
 	Note right of C: Read PORT, IP, IDCLI. <br/>fl_round_c = 0<br/>local_model = new()<br/>received = False<br/>updated = False
 	
@@ -91,6 +108,9 @@ sequenceDiagram
 	
 	Note left of S: If updated AND fl_round_c == fl_round_s:<br/> -> cli_models[IDCLI] = local_model
 	
+	S ->> C: ack
+	
+	
 	Note left of S: If len(cli_models) >= MINCLIENTS:<br/> -> Ready to proceed<br/>
 	
 	
@@ -101,5 +121,41 @@ sequenceDiagram
 	end
 	
 	end
-
+	
 </details>
+```
+
+## Running the system
+
+### Data
+
+Generate the configuration files for the server and each client with:
+
+```
+python -m ryofl.server make-configs --dataset femnist --model_id cnn --clients 4
+```
+These files will, by default, be create in the `configs/` folder. This can be
+changed in `ryofl/common.py`.
+Configuration files are human-readable json formatted, and will also contain the
+list of data files each client should use during the training.
+
+### Server
+
+The server script can then be run with:
+```
+python -m ryofl.server fl --config configs/cfg_file_0.json  
+```
+
+By default the server will wait for a sufficient number of clients to join
+before the actual training protocol begins.
+
+
+### Clients
+
+Similarly, running the clients script will look like:
+```
+python -m ryofl.client fl --config configs/cfg_file_1.json  
+```
+
+**Note:** please be careful to assign the correct configuration file to each
+client.
