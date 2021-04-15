@@ -5,7 +5,7 @@ General utilities for communications over the network
 import struct
 import pickle
 
-from typing import Any
+from typing import Any, Tuple
 
 
 def send_message(s: Any, msg: bytes):
@@ -81,4 +81,34 @@ def pack_message(idc: int, fl_r: int, upd: bool, m_state: dict) -> bytes:
 
     data_b = pickle.dumps(data)
     return data_b
+
+
+def unpack_message(data_r: bytes) -> Tuple:
+    """ Read the message bytes
+
+    Messages from clients have the form:
+        data = {
+            'idcli': int,
+            'fl_round': int,
+            'updated': bool,
+            'model_state': dict
+        }
+
+    Args:
+        data (bytes): message bytes
+        fl_r (int): round number
+        upd (bool): model update flag, used by clients
+        m_state (dict): state of the model
+
+    Returns:
+        Tuple: idcli, fl_round, updated, model_state
+    """
+
+    data: dict = pickle.loads(data_r)
+    cli_id = data['idcli']
+    fl_round = data['fl_round']
+    updated = data['updated']
+    m_state = data['model_state']
+
+    return cli_id, fl_round, updated, m_state
 

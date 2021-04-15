@@ -1,12 +1,14 @@
 import copy
 import time
-import pickle
 import threading
 import socketserver
+
+import numpy as np
 
 from ryofl.data import utils_data
 from ryofl.models import utils_model
 from ryofl.network import utils_network
+from ryofl.fl import aggregations, training
 
 
 # Current round of federated learning from the point of view of the server
@@ -55,14 +57,19 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         global cli_model_state, cli_model_state_lock
 
         # Receive the message bytes
-        data = utils_network.receive_message(self.request)
+        data = b''
+        try:
+            data = utils_network.receive_message(self.request)
+        except OSError:
+            print('WARNING problems with request:', self.request)
+
+        finally:
+            # If the first connection failed, just skip interaction
+            if not data:
+                return
 
         # Unpickle the bytes into a dictionary
-        data = pickle.loads(data)
-        cli_id = data['idcli']
-        fl_round_c = data['fl_round']
-        updated = data['updated']
-        cli_model = data['model_state']
+        cli_id, fl_round_c, updated, cli_model = utils_network.unpack_message(data)
 
         # Acquire locks to avoid round updates
         fl_round_s_lock.acquire()
@@ -131,12 +138,7 @@ def serve(cfg: dict):
     dataset = cfg['dataset']
     model_id = cfg['model_id']
     fraction = cfg['fraction']
-    epochs = cfg['epochs']
     batch = cfg['batch']
-    learning_rate = cfg['learning_rate']
-    momentum = cfg['momentum']
-    srv_host = cfg['srv_host']
-    srv_port = cfg['srv_port']
 
     # Global configuration values
     global SRV_ID, SRV_HOST, SRV_PORT, NUMCLIENTS, MINCLIENTS, RNDCLIENTS
@@ -157,14 +159,16 @@ def serve(cfg: dict):
         dataset=dataset, clients=None, fraction=fraction)
     channels, classes, transform = utils_data.get_metadata(dataset=dataset)
     del _
+    print('Testing data shapes: {} - {}'.format(tst_x.shape, tst_y.shape))
 
     # Initialize global model
     global_model = utils_model.build_model(model_id, channels, classes)
     global_state = copy.deepcopy(global_model.state_dict())
-    print('Model built:\n', global_state)
+    print('Model built:\n', global_model)
 
     # Initialize server
     server = ThreadedTCPServer((SRV_HOST, SRV_PORT), ThreadedTCPRequestHandler)
+    accuracies = []
 
     # Server main loop
     with server:
@@ -179,10 +183,62 @@ def serve(cfg: dict):
         while 1:
             time.sleep(0.1)
 
+            # Check the number of received models
             cli_model_state_lock.acquire()
+
             try:
-                print('current value of acc: {}'.format(cli_model_state))
+                n_received_models = len(cli_model_state)
+
             finally:
+                cli_model_state_lock.release()
+
+            # If we don't have enough models, just continue listening
+            if n_received_models < MINCLIENTS:
+                continue
+
+            # Otherwise:
+            # - acquire all locks, so that clents won't proceed
+            # - sample a subset of clients to use in aggregation
+            # - aggregate weights
+            # - test current state of the model
+            # - update fl_round_s number
+
+            fl_round_s_lock.acquire()
+            global_state_lock.acquire()
+            cli_model_state_lock.acquire()
+
+            try:
+                # Sample clients for the current round
+                rnd_clis = np.random.choice(
+                    list(cli_model_state.keys()), size=RNDCLIENTS, replace=False
+                )
+                rnd_cli_weights = copy.deepcopy(
+                    [cli_model_state[i] for i in rnd_clis])
+
+                # Aggregate weights and update global model
+                rnd_weights = aggregations.federated_averaging(rnd_cli_weights)
+                global_model.load_state_dict(rnd_weights)
+
+                # Evaluate global model
+                rnd_acc = training.eval_model(
+                    model=global_model,
+                    tst_x=tst_x,
+                    tst_y=tst_y,
+                    transform=transform,
+                    batch=batch
+                )
+                accuracies.append(rnd_acc)
+                print('Global model accuracy at round {}: {:.5f}'.format(
+                    fl_round_s, rnd_acc))
+
+                # Finally update the state of global variables
+                global_state = rnd_weights
+                cli_model_state = {}
+                fl_round_s += 1
+
+            finally:
+                fl_round_s_lock.release()
+                global_state_lock.release()
                 cli_model_state_lock.release()
 
         # Ensure server thread cleanup

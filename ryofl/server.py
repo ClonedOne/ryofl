@@ -1,9 +1,12 @@
 import os
 import json
+
 import click
+import numpy as np
 
 from ryofl import common
 from ryofl.fl import flserver
+from ryofl.data import utils_data
 
 
 @click.group()
@@ -41,7 +44,7 @@ def fl(config):
     '--fraction', help='fraction of the dataset to use', type=float, default=1.0
 )
 @click.option(
-    '--epochs', help='number of training epochs', type=int, default=10
+    '--epochs', help='number of local training epochs', type=int, default=3
 )
 @click.option(
     '--batch', help='size of mini batch', type=int, default=32
@@ -82,6 +85,10 @@ def make_configs(
     if not os.path.isdir(common.cfg_dir):
         os.makedirs(common.cfg_dir)
 
+    # Get the ids of the data chunks and crteate per-client lists
+    trn_ids, _ = utils_data.get_client_ids(dataset, trn=True, tst=False)
+    trn_ids_xclient = np.array_split(trn_ids, clients)
+
     # Create configurations
     for i in range(clients + 1):
         cfg_file = os.path.join(common.cfg_dir, 'cfg_file_{}.json'.format(i))
@@ -105,6 +112,10 @@ def make_configs(
             cfg_dict['num_clients'] = clients
             cfg_dict['min_clients'] = min_clients
             cfg_dict['rnd_clients'] = rnd_clients
+
+        # If client, also provide list of data chunks
+        else:
+            cfg_dict['data_clis'] = trn_ids_xclient[i - 1].tolist()
 
         # Save to file
         json.dump(cfg_dict, open(cfg_file, 'w', encoding='utf-8'), indent=2)

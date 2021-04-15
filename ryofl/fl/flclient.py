@@ -1,16 +1,11 @@
-import pickle
+import copy
 import socket
 
-import numpy as np
-
+from ryofl import common
 from ryofl.fl import training
 from ryofl.data import utils_data
 from ryofl.models import utils_model
 from ryofl.network import utils_network
-
-
-HOST = '127.0.0.1'
-PORT = 9999
 
 
 def client(cfg: dict):
@@ -20,7 +15,8 @@ def client(cfg: dict):
         cfg (dict): configuration dictionary
     """
 
-    print('Starting federated learning client. Received config: {}'.format(cfg))
+    _p = ['{} - {}\n'.format(k, v) for k, v in cfg.items() if k != 'data_clis']
+    print('Federated learning client. Config: {}'.format(_p))
 
     # Unpacking
     idcli = cfg['idcli']
@@ -33,32 +29,112 @@ def client(cfg: dict):
     momentum = cfg['momentum']
     srv_host = cfg['srv_host']
     srv_port = cfg['srv_port']
+    data_clients = cfg['data_clis']
+
+    # Load local training data
+    trn_x, trn_y, _, _ = utils_data.load_dataset(
+        dataset=dataset, clients=data_clients, fraction=fraction)
+    channels, classes, transform = utils_data.get_metadata(dataset=dataset)
+    del _
+    print('Training data shapes: {} - {}'.format(trn_x.shape, trn_y.shape))
+
+    # Initialize local model
+    local_model = utils_model.build_model(model_id, channels, classes)
 
     # Initialize loop variables
     fl_round_c = 0
     received = False
     updated = False
 
-    a = np.array([
-        [[1.2, 0.5], [2.3, 1.1]],
-        [[4.5, 6.7], [7.9, 2.1]],
-        [[8.6, 10], [11.1, 3.1]]
-    ])
-    c = utils_network.pack_message(
-        idc=idcli, fl_r=fl_round_c, upd=updated, m_state=a)
-    print('sending', c)
+    # Client main loop
+    # The client has two main interactions with the server:
+    # 1) send the current round number and ask for global state;
+    # 2) send the updated local model.
+    # Between these two interactions, the client updates its local state.
+    while True:
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Interaction 1)
+        # Prepare message
+        local_state = copy.deepcopy(local_model.state_dict())
+        cli_msg = utils_network.pack_message(
+            idc=idcli, fl_r=fl_round_c, upd=updated, m_state=local_state)
+        data = b''
 
-    s.connect((HOST, PORT))
-    dmp = pickle.dumps(c)
-    utils_network.send_message(s, dmp)
+        # Send first message and receive reply
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.connect((srv_host, srv_port))
+            utils_network.send_message(s, cli_msg)
 
-    data = utils_network.receive_message(s)
-    d = pickle.loads(data)
-    print('Received', d.keys())
+            data = utils_network.receive_message(s)
+        except OSError:
+            print('WARNING could not connect to server')
 
-    s.close()
+        finally:
+            s.close()
+
+        # If communication failed, continue
+        if not data:
+            continue
+
+        # Unpicle server message
+        srv_id, fl_round_s, srv_upd, srv_m_state = utils_network.unpack_message(
+            data)
+
+        if srv_id != common.SRV_ID:
+            print('WARNING received message from: ', srv_id)
+            continue
+
+        # Update local model
+        if fl_round_c != fl_round_s and not received and srv_upd:
+            fl_round_c = fl_round_s
+            received = True
+            updated = False
+
+            # Assign received weights to local model
+            local_model.load_state_dict(srv_m_state)
+
+            # Perform local training
+            training.train_epochs(
+                model=local_model,
+                trn_x=trn_x,
+                trn_y=trn_y,
+                transform=transform,
+                epochs=epochs,
+                batch=batch,
+                lrn_rate=learning_rate,
+                momentum=momentum
+            )
+            updated = True
+
+        # Interaction 2)
+        local_state = copy.deepcopy(local_model.state_dict())
+        cli_msg = utils_network.pack_message(
+            idc=idcli, fl_r=fl_round_c, upd=updated, m_state=local_state)
+        data = b''
+
+        # Send second message and receive reply
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.connect((srv_host, srv_port))
+            utils_network.send_message(s, cli_msg)
+
+            data = utils_network.receive_message(s)
+        except OSError:
+            print('WARNING could not connect to server')
+
+        finally:
+            s.close()
+
+        # If communication failed, continue
+        if not data:
+            continue
+
+        # Unpack server response
+        srv_id, fl_round_s, srv_upd, srv_m_state = utils_network.unpack_message(
+            data)
+        if not srv_upd:
+            received = False
 
 
 def standalone(
