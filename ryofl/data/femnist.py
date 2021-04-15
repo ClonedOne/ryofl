@@ -167,7 +167,6 @@ def _load_multi_clients(clients, base_dir: str = ''):
         clients: (list, ndarray, string) ids of the clients to load
         base_dir (str): overwrite default data dir
 
-
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
     """
@@ -256,3 +255,36 @@ def load_data(
     tst_y = tst_y.astype(np.int64, copy=False)
 
     return trn_x, trn_y, tst_x, tst_y
+
+
+def get_client_ids(trn: bool = True, tst: bool = True, base_dir: str = '') -> Tuple:
+    """ Return list of client ids for training and test sets
+
+    Args:
+        trn (bool): if true return the list for train ids
+        tst (bool): if true return the list for test ids
+        base_dir (str): overwrite default data dir
+
+    Returns:
+        Tuple: train ids, test ids
+    """
+
+    trn_ids = []
+    tst_ids = []
+
+    if not base_dir:
+        _dir = common.femnist_clients_dir
+    else:
+        _dir = base_dir
+
+    if trn:
+        trn_ids = sorted(set(
+            [i.split('-')[1][:-6] for i in os.listdir(_dir) if 'trn' in i]
+        ))
+
+    if tst:
+        tst_ids = sorted(set(
+            [i.split('-')[1][:-6] for i in os.listdir(_dir) if 'tst' in i]
+        ))
+
+    return trn_ids, tst_ids

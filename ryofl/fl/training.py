@@ -78,8 +78,26 @@ def train_epochs(
         print('Model training accuracy: {:.4f}'.format(accuracy))
 
 
+def eval_model(
+    model: Any,
+    tst_x: ndarray,
+    tst_y: ndarray,
+    transform,
+    batch: int
+) -> float:
+    """ Evaluate model on provided data
 
-def eval_model(model, tst_x, tst_y, transform, batch):
+    Args:
+        model Any: pytorch model
+        tst_x (ndarray): data matrix
+        tst_y (ndarray): labels
+        transform: pyth
+        batch (int): size of mini batch
+
+    Returns:
+        float: accuracy value
+    """
+
     # Accumulators
     correct = 0.0
     total = 0.0
@@ -91,7 +109,6 @@ def eval_model(model, tst_x, tst_y, transform, batch):
     # Create a DataLoader from the given arrays
     tst_dl = utils_data.make_dataloader(
         tst_x, tst_y, transform, shuffle=True, batch=batch)
-
 
     # No gradient computation during evaluation
     with torch.no_grad():
@@ -109,4 +126,3 @@ def eval_model(model, tst_x, tst_y, transform, batch):
 
     accuracy = correct / total
     return accuracy
-
