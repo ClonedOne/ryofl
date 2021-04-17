@@ -138,6 +138,7 @@ def serve(cfg: dict):
     dataset = cfg['dataset']
     model_id = cfg['model_id']
     fraction = cfg['fraction']
+    rounds = cfg['rounds']
     batch = cfg['batch']
 
     # Global configuration values
@@ -180,7 +181,7 @@ def serve(cfg: dict):
         print('Server loop running in thread: {}'.format(server_thread.name))
 
         # Main server loop
-        while 1:
+        while fl_round_s <= rounds:
             time.sleep(0.1)
 
             # Check the number of received models

@@ -23,6 +23,7 @@ def client(cfg: dict):
     dataset = cfg['dataset']
     model_id = cfg['model_id']
     fraction = cfg['fraction']
+    rounds = cfg['rounds']
     epochs = cfg['epochs']
     batch = cfg['batch']
     learning_rate = cfg['learning_rate']
@@ -51,7 +52,7 @@ def client(cfg: dict):
     # 1) send the current round number and ask for global state;
     # 2) send the updated local model.
     # Between these two interactions, the client updates its local state.
-    while True:
+    while fl_round_c <= rounds:
 
         # Interaction 1)
         # Prepare message

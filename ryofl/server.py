@@ -41,6 +41,9 @@ def fl(config):
     type=int, prompt=True
 )
 @click.option(
+    '--rounds', help='number of federated learning rounds', type=int, default=10
+)
+@click.option(
     '--fraction', help='fraction of the dataset to use', type=float, default=1.0
 )
 @click.option(
@@ -67,6 +70,7 @@ def make_configs(
     dataset: str,
     model_id: str,
     clients: int,
+    rounds: int,
     fraction: float,
     epochs: int,
     batch: int,
@@ -99,6 +103,7 @@ def make_configs(
             'dataset': dataset,
             'model_id': model_id,
             'fraction': fraction,
+            'rounds': rounds,
             'epochs': epochs,
             'batch': batch,
             'learning_rate': learning_rate,
