@@ -38,6 +38,9 @@ class BaseCNN(nn.Module):
         self.fc2 = nn.Linear(400, 120)
         self.fc3 = nn.Linear(120, self.classes)
 
+        # Dropout regularization
+        self.dropout = nn.Dropout(0.25)
+
     def forward(self, x):
         """ Forward pass of the network
 
@@ -52,7 +55,10 @@ class BaseCNN(nn.Module):
         #  x = self.pool(F.relu(self.conv2(x)))
         x = self.amaxpool(F.relu(self.conv2(x)))
         x = x.view(-1, 16 * 5 * 7)
+        x = self.dropout(x)
         x = F.relu(self.fc1(x))
+        x = self.dropout(x)
         x = F.relu(self.fc2(x))
+        x = self.dropout(x)
         x = self.fc3(x)
         return x

@@ -217,7 +217,8 @@ def serve(cfg: dict):
                     [cli_model_state[i] for i in rnd_clis])
 
                 # Aggregate weights and update global model
-                rnd_weights = aggregations.federated_averaging(rnd_cli_weights)
+                rnd_weights = aggregations.scaled_federated_averaging(
+                    rnd_cli_weights)
                 global_model.load_state_dict(rnd_weights)
 
                 # Evaluate global model
