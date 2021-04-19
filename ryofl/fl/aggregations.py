@@ -8,6 +8,39 @@ import copy
 from torch import Tensor
 
 
+def aggregate(
+    client_weights: list,
+    strategy: str,
+    params: dict = None
+) -> dict:
+    """ Aggregate client updates with specified function
+
+    The global model state dictionary will always be at position 0 of
+    client_weights.
+
+    Args:
+        client_weights (list): list of client weight dictionaries
+        strategy: identifier of the strategy to use
+        params: optional dictionary of parameters
+
+    Returns:
+        dict: state dicto for averaged model
+
+    Raises:
+        NotImplementedError: str
+    """
+
+    if strategy == 'averaging':
+        return federated_averaging(client_weights)
+
+    elif strategy == 'scaled_averaging':
+        return scaled_federated_averaging(client_weights, params)
+
+    else:
+        raise NotImplementedError('Strategy {} not supported'.format(strategy))
+
+
+
 def federated_averaging(client_weights: list) -> dict:
     """ Perform federated averaging over the clients' weights
 
@@ -44,15 +77,21 @@ def federated_averaging(client_weights: list) -> dict:
     return temp_weight
 
 
-def scaled_federated_averaging(client_weights: list, alpha: float = 0.2) -> dict:
+def scaled_federated_averaging(
+    client_weights: list,
+    params: dict = None
+) -> dict:
     """ Perform federated averaging over the clients' weights
 
     Client weights are dictionaries obtained with model.state_dict()
     https://pytorch.org/tutorials/recipes/recipes/what_is_state_dict.html
 
+    parameters in `params`:
+        alpha (float): learning rate for the aggregation
+
     Args:
         client_weights (list): list of client weight dictionaries
-        alpha (float): learning rate for the aggregation
+        params (dict): dictionary of parameters
 
     Returns:
         dict: state dict for averaged model
@@ -61,6 +100,11 @@ def scaled_federated_averaging(client_weights: list, alpha: float = 0.2) -> dict
     # Handle possible issues with client updates list
     if not client_weights:
         raise RuntimeError('Empty client_weights list recieved')
+
+    if params:
+        alpha = params.get('alpha', 0.3)
+    else:
+        alpha = 0.3
 
     num_updates = len(client_weights)
 

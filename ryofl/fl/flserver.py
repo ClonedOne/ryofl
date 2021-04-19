@@ -215,10 +215,13 @@ def serve(cfg: dict):
                 )
                 rnd_cli_weights = copy.deepcopy(
                     [cli_model_state[i] for i in rnd_clis])
+                rnd_cli_weights = [global_state, ] + rnd_cli_weights
 
                 # Aggregate weights and update global model
-                rnd_weights = aggregations.scaled_federated_averaging(
-                    rnd_cli_weights)
+                rnd_weights = aggregations.aggregate(
+                    rnd_cli_weights,
+                    'averaging'
+                )
                 global_model.load_state_dict(rnd_weights)
 
                 # Evaluate global model
