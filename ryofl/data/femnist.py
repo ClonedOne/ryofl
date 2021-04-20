@@ -160,12 +160,13 @@ def _load_data_handler(in_data: tuple):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def _load_multi_clients(clients, base_dir: str = ''):
+def _load_multi_clients(clients, base_dir: str = '', workers: int = 0):
     """ Use multiprocessing to load the data for multiple clients
 
     Args:
         clients: (list, ndarray, string) ids of the clients to load
         base_dir (str): overwrite default data dir
+        workers (int): number of dataloader workers
 
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
@@ -176,7 +177,8 @@ def _load_multi_clients(clients, base_dir: str = ''):
     else:
         _dir = base_dir
 
-    workers = common.processors
+    if workers == 0:
+        workers = common.processors
 
     cli_lists = np.array_split(clients, workers)
     in_data_l = [(i, cli_lists[i], _dir) for i in range(workers)]

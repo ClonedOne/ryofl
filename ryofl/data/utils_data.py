@@ -97,7 +97,8 @@ def make_dataloader(
     y: Iterable,
     transform: Any,
     shuffle: bool,
-    batch: int
+    batch: int,
+    workers: int = 0
 ) -> DataLoader:
     """ Generate DataLoader from numpy arrays
 
@@ -112,16 +113,19 @@ def make_dataloader(
         transform (Any): transformations to apply to each point
         shuffle (bool): shuffle the dataset
         batch (int): mini batch size
+        workers (int): number of dataloader workers
 
     Returns:
         DataLoader: torch DataLoader
     """
 
+    if workers == 0:
+        workers = common.processors
+
     tx = torch.cat([torch.unsqueeze(transform(i), 0) for i in x])
     ty = torch.tensor(y)
 
     ds = TensorDataset(tx, ty)
-    dl = DataLoader(ds, batch_size=batch, shuffle=shuffle,
-                    num_workers=common.processors)
+    dl = DataLoader(ds, batch_size=batch, shuffle=shuffle, num_workers=workers)
 
     return dl
