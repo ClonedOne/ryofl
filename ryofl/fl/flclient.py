@@ -33,9 +33,6 @@ def client(cfg: dict):
     data_clients = cfg['data_clis']
     workers = cfg['workers']
 
-    if workers == 0:
-        workers = common.processors
-
     # Load local training data
     trn_x, trn_y, _, _ = utils_data.load_dataset(
         dataset=dataset, clients=data_clients, fraction=fraction)
@@ -108,7 +105,8 @@ def client(cfg: dict):
                 epochs=epochs,
                 batch=batch,
                 lrn_rate=learning_rate,
-                momentum=momentum
+                momentum=momentum,
+                workers=workers
             )
             updated = True
 
