@@ -2,7 +2,7 @@ import copy
 import socket
 
 from ryofl import common
-from ryofl.fl import training
+from ryofl.fl import flserver, training
 from ryofl.data import utils_data
 from ryofl.models import utils_model
 from ryofl.network import utils_network
@@ -45,7 +45,6 @@ def client(cfg: dict):
 
     # Initialize loop variables
     fl_round_c = 0
-    received = False
     updated = False
 
     # Client main loop
@@ -53,9 +52,8 @@ def client(cfg: dict):
     # 1) send the current round number and ask for global state;
     # 2) send the updated local model.
     # Between these two interactions, the client updates its local state.
-    while fl_round_c < rounds:
+    while fl_round_c <= rounds:
 
-        # Interaction 1)
         # Prepare message
         local_state = copy.deepcopy(local_model.state_dict())
         cli_msg = utils_network.pack_message(
@@ -87,11 +85,9 @@ def client(cfg: dict):
             print('WARNING received message from: ', srv_id)
             continue
 
-        # Update local model
-        if fl_round_c != fl_round_s and not received and srv_upd:
+        # Interaction 1)
+        if fl_round_c != fl_round_s and srv_upd:
             fl_round_c = fl_round_s
-            received = True
-            updated = False
 
             # Assign received weights to local model
             local_model.load_state_dict(srv_m_state)
@@ -111,33 +107,12 @@ def client(cfg: dict):
             updated = True
 
         # Interaction 2)
-        local_state = copy.deepcopy(local_model.state_dict())
-        cli_msg = utils_network.pack_message(
-            idc=idcli, fl_r=fl_round_c, upd=updated, m_state=local_state)
-        data = b''
+        elif fl_round_c == fl_round_s and not srv_upd:
+            updated = False
 
-        # Send second message and receive reply
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.connect((srv_host, srv_port))
-            utils_network.send_message(s, cli_msg)
-
-            data = utils_network.receive_message(s)
-        except OSError:
-            print('WARNING could not connect to server')
-
-        finally:
-            s.close()
-
-        # If communication failed, continue
-        if not data:
+        # Something is wrong with the received message
+        else:
             continue
-
-        # Unpack server response
-        srv_id, fl_round_s, srv_upd, srv_m_state = utils_network.unpack_message(
-            data)
-        if not srv_upd:
-            received = False
 
 
 def standalone(
