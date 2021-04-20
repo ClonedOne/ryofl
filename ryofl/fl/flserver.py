@@ -77,32 +77,28 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         cli_model_state_lock.acquire()
 
         try:
+            # If something goes wrong with the client message, the default
+            # message is ack
+            srv_upd = False
+            srv_state = {}
+
             if fl_round_c != fl_round_s:
                 # Interaction 1)
-                srv_message = utils_network.pack_message(
-                    idc=SRV_ID,
-                    fl_r=fl_round_s,
-                    upd=True,
-                    m_state=global_state
-                )
-                utils_network.send_message(self.request, srv_message)
+                srv_upd = True
+                srv_state = copy.deepcopy(global_state)
 
             elif updated:
                 # Interaction 2)
+                # Response will act as ack
                 cli_model_state[cli_id] = cli_model
 
-                # This will act as ack
-                srv_message = utils_network.pack_message(
-                    idc=SRV_ID,
-                    fl_r=fl_round_s,
-                    upd=False,
-                    m_state={}
-                )
-                utils_network.send_message(self.request, srv_message)
-
-            else:
-                # Something went wrong with the client message, ignore this one
-                pass
+            srv_message = utils_network.pack_message(
+                idc=SRV_ID,
+                fl_r=fl_round_s,
+                upd=srv_upd,
+                m_state=srv_state
+            )
+            utils_network.send_message(self.request, srv_message)
 
         except OSError:
             print('WARNING problems with communications with client', cli_id)
