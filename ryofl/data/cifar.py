@@ -236,13 +236,15 @@ def _load_multi_clients(clients, base_dir: str = '', workers: int = 0):
 
 def load_data(
     clients,
-    frac: float = 1.0
+    frac: float = 1.0,
+    tst: bool = True
 ) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
     """ Load data wrapper for CIFAR100
 
     Args:
         clients: (list, ndarray, string) ids of the clients to load
         frac (float): fraction of the data to sample
+        tst (bool): if true load test data
 
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
@@ -272,11 +274,14 @@ def load_data(
         _, trn_y = train_test_split(
             trn_y, test_size=frac, random_state=0, stratify=trn_y)
 
-        if tst_y.size != 0:
+        if tst:
             _, tst_x = train_test_split(
                 tst_x, test_size=frac, random_state=0, stratify=tst_y)
             _, tst_y = train_test_split(
                 tst_y, test_size=frac, random_state=0, stratify=tst_y)
+        else:
+            tst_x = np.array([])
+            tst_y = np.array([])
 
     return trn_x, trn_y, tst_x, tst_y
 

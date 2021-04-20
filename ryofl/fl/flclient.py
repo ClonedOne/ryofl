@@ -140,7 +140,7 @@ def standalone(
 
     # Load the dataset
     trn_x, trn_y, tst_x, tst_y = utils_data.load_dataset(
-        dataset=dataset, fraction=fraction)
+        dataset=dataset, fraction=fraction, tst=False)
     print(
         'Selected dataset: {}\n'
         '\ttrn_x: {}\n\ttrn_y: {}\n'

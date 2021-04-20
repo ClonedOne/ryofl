@@ -16,7 +16,8 @@ from ryofl.data import femnist, cifar
 def load_dataset(
     dataset: str,
     clients=None,
-    fraction: float = 1.0
+    fraction: float = 1.0,
+    tst: bool = True,
 ) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
     """ Wrapper function to load data from a dataset
 
@@ -26,6 +27,7 @@ def load_dataset(
         dataset (str): identifier of the dataset to load
         clients: (string, list, ndarray) ids of the clients to load
         fraction (float): fraction of the data to sample
+        tst (bool): if true load test data
 
     Raises:
         NotImplementedError: dataset must belong to list of supported datasets
@@ -35,10 +37,10 @@ def load_dataset(
     """
 
     if dataset == 'femnist':
-        return femnist.load_data(clients, fraction)
+        return femnist.load_data(clients, fraction, tst)
 
     elif dataset == 'cifar100':
-        return cifar.load_data(clients, fraction)
+        return cifar.load_data(clients, fraction, tst)
 
     else:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))
