@@ -22,7 +22,9 @@ classes = 100
 
 # Image transformations
 # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-transform = transforms.Compose([ transforms.ToTensor(), #  transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    #  transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
 
