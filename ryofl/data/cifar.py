@@ -22,9 +22,7 @@ classes = 100
 
 # Image transformations
 # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    #  transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+transform = transforms.Compose([ transforms.ToTensor(), #  transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
 
@@ -300,7 +298,7 @@ def get_client_ids(trn: bool = True, tst: bool = True, base_dir: str = '') -> Tu
     tst_ids = []
 
     if not base_dir:
-        _dir = common.femnist_clients_dir
+        _dir = common.cifar100_clients_dir
     else:
         _dir = base_dir
 
