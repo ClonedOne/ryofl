@@ -35,7 +35,7 @@ def client(cfg: dict):
 
     # Load local training data
     trn_x, trn_y, _, _ = utils_data.load_dataset(
-        dataset=dataset, clients=data_clients, fraction=fraction)
+        dataset=dataset, clients=data_clients, fraction=fraction, tst=False)
     channels, classes, transform = utils_data.get_metadata(dataset=dataset)
     del _
     print('Training data shapes: {} - {}'.format(trn_x.shape, trn_y.shape))
@@ -140,7 +140,7 @@ def standalone(
 
     # Load the dataset
     trn_x, trn_y, tst_x, tst_y = utils_data.load_dataset(
-        dataset=dataset, fraction=fraction, tst=False)
+        dataset=dataset, fraction=fraction)
     print(
         'Selected dataset: {}\n'
         '\ttrn_x: {}\n\ttrn_y: {}\n'
