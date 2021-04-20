@@ -102,7 +102,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
             else:
                 # Something went wrong with the client message, ignore this one
-                print('WARNING bad format message: {}'.format(data))
+                pass
 
         except OSError:
             print('WARNING problems with communications with client', cli_id)
