@@ -249,10 +249,6 @@ def load_data(
         _, tst_y = train_test_split(
             tst_y, test_size=frac, random_state=0, stratify=tst_y)
 
-    # Before returning the data, we need to transform the images from TF to torch
-    # formatting. That is from NxHxWxC to NxCxHxW.
-    #  trn_x = trn_x.transpose(0, 3, 1, 2)
-    #  tst_x = tst_x.transpose(0, 3, 1, 2)
     trn_y = trn_y.astype(np.int64, copy=False)
     tst_y = tst_y.astype(np.int64, copy=False)
 
