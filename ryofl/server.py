@@ -66,6 +66,10 @@ def fl(config):
     '--rnd_clients', help='number of clients to sample in round',
     type=int, default=0
 )
+@click.option(
+    '--workers', help='number of worker processes, 0 to use all processors',
+    type=int, default=0
+)
 def make_configs(
     dataset: str,
     model_id: str,
@@ -77,7 +81,8 @@ def make_configs(
     learning_rate: float,
     momentum: float,
     min_clients: int,
-    rnd_clients: int
+    rnd_clients: int,
+    workers: int
 ):
     # If not specified, compute min_clients, rnd_clients
     if min_clients == 0:
@@ -109,7 +114,8 @@ def make_configs(
             'learning_rate': learning_rate,
             'momentum': momentum,
             'srv_host': common.SRV_HOST,
-            'srv_port': common.SRV_PORT
+            'srv_port': common.SRV_PORT,
+            'workers': workers
         }
 
         # Server only configuration

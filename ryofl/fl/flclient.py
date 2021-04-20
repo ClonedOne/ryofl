@@ -31,6 +31,10 @@ def client(cfg: dict):
     srv_host = cfg['srv_host']
     srv_port = cfg['srv_port']
     data_clients = cfg['data_clis']
+    workers = cfg['workers']
+
+    if workers == 0:
+        workers = common.processors
 
     # Load local training data
     trn_x, trn_y, _, _ = utils_data.load_dataset(
