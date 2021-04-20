@@ -140,6 +140,7 @@ def serve(cfg: dict):
     fraction = cfg['fraction']
     rounds = cfg['rounds']
     batch = cfg['batch']
+    aggregation = cfg['aggregation']
 
     # Global configuration values
     global SRV_ID, SRV_HOST, SRV_PORT, NUMCLIENTS, MINCLIENTS, RNDCLIENTS
@@ -220,7 +221,7 @@ def serve(cfg: dict):
                 # Aggregate weights and update global model
                 rnd_weights = aggregations.aggregate(
                     rnd_cli_weights,
-                    'averaging'
+                    aggregation
                 )
                 global_model.load_state_dict(rnd_weights)
 

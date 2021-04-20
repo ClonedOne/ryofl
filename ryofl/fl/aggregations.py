@@ -7,11 +7,7 @@ import copy
 
 from torch import Tensor
 
-
-def aggregate(
-    client_weights: list,
-    strategy: str,
-    params: dict = None
+def aggregate( client_weights: list, strategy: str, params: dict = None
 ) -> dict:
     """ Aggregate client updates with specified function
 
@@ -27,7 +23,7 @@ def aggregate(
         dict: state dicto for averaged model
 
     Raises:
-        NotImplementedError: str
+        NotImplementedError: strategy should be defined
     """
 
     if strategy == 'averaging':

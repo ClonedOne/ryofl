@@ -23,16 +23,15 @@ def fl(config):
 @click.command()
 @click.option(
     '--dataset', help='identifier of the dataset to use',
-    type=click.Choice(['femnist', 'cifar100'], case_sensitive=False),
-    prompt=True
+    type=str, prompt=True
 )
 @click.option(
     '--model_id', help='identifier of the model to train',
-    type=click.Choice(['cnn', ], case_sensitive=False),
-    prompt=True
+    type=str, prompt=True
 )
 @click.option(
-    '--fraction', help='fraction of the dataset to use', type=float, default=1.0
+    '--fraction', help='fraction of the dataset to use',
+    type=float, default=1.0
 )
 @click.option(
     '--epochs', help='number of training epochs', type=int, default=10
@@ -41,7 +40,8 @@ def fl(config):
     '--batch', help='size of mini batch', type=int, default=32
 )
 @click.option(
-    '--learning_rate', help='optimizer learning rate', type=float, default=0.001
+    '--learning_rate', help='optimizer learning rate',
+    type=float, default=0.001
 )
 @click.option(
     '--momentum', help='optimizer momentum value', type=float, default=0.9

@@ -28,23 +28,27 @@ def fl(config):
 @click.command()
 @click.option(
     '--dataset', help='identifier of the dataset to use',
-    type=click.Choice(['femnist', 'cifar100'], case_sensitive=False),
-    prompt=True
+    type=str, prompt=True
 )
 @click.option(
     '--model_id', help='identifier of the model to train',
-    type=click.Choice(['cnn', ], case_sensitive=False),
-    prompt=True
+    type=str, prompt=True
 )
 @click.option(
     '--clients', help='number of clients participating',
     type=int, prompt=True
 )
 @click.option(
-    '--rounds', help='number of federated learning rounds', type=int, default=10
+    '--rounds', help='number of federated learning rounds',
+    type=int, default=10
 )
 @click.option(
-    '--fraction', help='fraction of the dataset to use', type=float, default=1.0
+    '--aggregation', help='indentifier of federated aggregation function',
+    type=str, default='averaging'
+)
+@click.option(
+    '--fraction', help='fraction of the dataset to use',
+    type=float, default=1.0
 )
 @click.option(
     '--epochs', help='number of local training epochs', type=int, default=3
@@ -53,7 +57,8 @@ def fl(config):
     '--batch', help='size of mini batch', type=int, default=32
 )
 @click.option(
-    '--learning_rate', help='optimizer learning rate', type=float, default=0.001
+    '--learning_rate', help='optimizer learning rate',
+    type=float, default=0.001
 )
 @click.option(
     '--momentum', help='optimizer momentum value', type=float, default=0.9
@@ -75,6 +80,7 @@ def make_configs(
     model_id: str,
     clients: int,
     rounds: int,
+    aggregation:str,
     fraction: float,
     epochs: int,
     batch: int,
@@ -123,6 +129,7 @@ def make_configs(
             cfg_dict['num_clients'] = clients
             cfg_dict['min_clients'] = min_clients
             cfg_dict['rnd_clients'] = rnd_clients
+            cfg_dict['aggregation'] = aggregation
 
         # If client, also provide list of data chunks
         else:
