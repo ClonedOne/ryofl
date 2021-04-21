@@ -45,7 +45,7 @@ def train_epochs(
 
     # Create a DataLoader from the given arrays
     trn_dl = utils_data.make_dataloader(
-        trn_x, trn_y, transform, shuffle=True, batch=batch)
+        trn_x, trn_y, transform, shuffle=True, batch=batch, workers=workers)
 
     # Define a loss function and an optimizer
     criterion = nn.CrossEntropyLoss()

@@ -122,7 +122,8 @@ def standalone(
     epochs: int,
     batch: int,
     learning_rate: float,
-    momentum: float
+    momentum: float,
+    workers: int
 ):
     """ Train a standalone model on the dataset
 
@@ -136,6 +137,7 @@ def standalone(
         batch (int): size of mini batch
         learning_rate (float): optimizer learning rate
         momentum (float): optimizer momentum value
+        workers (int): number of worker threads
     """
 
     # Load the dataset
@@ -153,6 +155,10 @@ def standalone(
     model = utils_model.build_model(model_id, channels, classes)
     print('Model built:\n', model)
 
+    import numpy as np
+    np.save('trn_x', trn_x)
+    np.save('trn_y', trn_y)
+
     # Train the model
     training.train_epochs(
         model=model,
@@ -162,7 +168,8 @@ def standalone(
         epochs=epochs,
         batch=batch,
         lrn_rate=learning_rate,
-        momentum=momentum
+        momentum=momentum,
+        workers=workers
     )
 
     # Evaluation

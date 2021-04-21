@@ -46,6 +46,9 @@ def fl(config):
 @click.option(
     '--momentum', help='optimizer momentum value', type=float, default=0.9
 )
+@click.option(
+    '--workers', help='number of worker threads', type=int, default=1
+)
 def train_standalone(
     dataset: str,
     model_id: str,
@@ -53,7 +56,8 @@ def train_standalone(
     epochs: int,
     batch: int,
     learning_rate: float,
-    momentum: float
+    momentum: float,
+    workers: int
 ):
     flclient.standalone(
         dataset,
@@ -62,7 +66,8 @@ def train_standalone(
         epochs,
         batch,
         learning_rate,
-        momentum
+        momentum,
+        workers
     )
 
 
