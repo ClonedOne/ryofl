@@ -52,7 +52,7 @@ def client(cfg: dict):
     # 1) send the current round number and ask for global state;
     # 2) send the updated local model.
     # Between these two interactions, the client updates its local state.
-    while fl_round_c <= rounds:
+    while fl_round_c < rounds:
 
         # Prepare message
         local_state = copy.deepcopy(local_model.state_dict())

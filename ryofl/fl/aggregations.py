@@ -37,6 +37,39 @@ def aggregate( client_weights: list, strategy: str, params: dict = None
 
 
 
+def aggregate(
+    client_weights: list,
+    strategy: str,
+    params: dict = None
+) -> dict:
+    """ Aggregate client updates with specified function
+
+    The global model state dictionary will always be at position 0 of
+    client_weights.
+
+    Args:
+        client_weights (list): list of client weight dictionaries
+        strategy: identifier of the strategy to use
+        params: optional dictionary of parameters
+
+    Returns:
+        dict: state dicto for averaged model
+
+    Raises:
+        NotImplementedError: str
+    """
+
+    if strategy == 'averaging':
+        return federated_averaging(client_weights)
+
+    elif strategy == 'scaled_averaging':
+        return scaled_federated_averaging(client_weights, params)
+
+    else:
+        raise NotImplementedError('Strategy {} not supported'.format(strategy))
+
+
+
 def federated_averaging(client_weights: list) -> dict:
     """ Perform federated averaging over the clients' weights
 
