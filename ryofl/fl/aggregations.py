@@ -7,6 +7,35 @@ import copy
 
 from torch import Tensor
 
+def aggregate( client_weights: list, strategy: str, params: dict = None
+) -> dict:
+    """ Aggregate client updates with specified function
+
+    The global model state dictionary will always be at position 0 of
+    client_weights.
+
+    Args:
+        client_weights (list): list of client weight dictionaries
+        strategy: identifier of the strategy to use
+        params: optional dictionary of parameters
+
+    Returns:
+        dict: state dicto for averaged model
+
+    Raises:
+        NotImplementedError: strategy should be defined
+    """
+
+    if strategy == 'averaging':
+        return federated_averaging(client_weights)
+
+    elif strategy == 'scaled_averaging':
+        return scaled_federated_averaging(client_weights, params)
+
+    else:
+        raise NotImplementedError('Strategy {} not supported'.format(strategy))
+
+
 
 def aggregate(
     client_weights: list,
@@ -66,7 +95,7 @@ def federated_averaging(client_weights: list) -> dict:
     temp_weight = copy.deepcopy(client_weights[0])
 
     # Accumulate weights
-    for client_dict in client_weights:
+    for client_dict in client_weights[1:]:
         for layer_name, layer_weights in client_dict.items():
             temp_weight[layer_name] += layer_weights
 
@@ -106,7 +135,7 @@ def scaled_federated_averaging(
     else:
         alpha = 0.3
 
-    num_updates = len(client_weights)
+    num_updates = len(client_weights) - 1
 
     if num_updates == 1:
         print('WARNING: RECEIVED SINGLE CLIENT UPDATE')
@@ -115,14 +144,13 @@ def scaled_federated_averaging(
     temp_weight = copy.deepcopy(client_weights[1])
 
     # Accumulate weights
-    for client_dict in client_weights[1:]:
+    for client_dict in client_weights[2:]:
         for layer_name, layer_weights in client_dict.items():
             temp_weight[layer_name] += layer_weights
 
     # Average them
     for layer_name, layer_weights in temp_weight.items():
-        temp_weight[layer_name] = \
-            (1 - alpha) * glob_weight[layer_name] \
+        temp_weight[layer_name] = (1 - alpha) * glob_weight[layer_name] \
             + alpha * (layer_weights / num_updates)
 
     return temp_weight

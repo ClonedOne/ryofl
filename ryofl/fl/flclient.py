@@ -2,7 +2,7 @@ import copy
 import socket
 
 from ryofl import common
-from ryofl.fl import training
+from ryofl.fl import flserver, training
 from ryofl.data import utils_data
 from ryofl.models import utils_model
 from ryofl.network import utils_network
@@ -31,10 +31,11 @@ def client(cfg: dict):
     srv_host = cfg['srv_host']
     srv_port = cfg['srv_port']
     data_clients = cfg['data_clis']
+    workers = cfg['workers']
 
     # Load local training data
     trn_x, trn_y, _, _ = utils_data.load_dataset(
-        dataset=dataset, clients=data_clients, fraction=fraction)
+        dataset=dataset, clients=data_clients, fraction=fraction, tst=False)
     channels, classes, transform = utils_data.get_metadata(dataset=dataset)
     del _
     print('Training data shapes: {} - {}'.format(trn_x.shape, trn_y.shape))
@@ -44,7 +45,6 @@ def client(cfg: dict):
 
     # Initialize loop variables
     fl_round_c = 0
-    received = False
     updated = False
 
     # Client main loop
@@ -54,7 +54,6 @@ def client(cfg: dict):
     # Between these two interactions, the client updates its local state.
     while fl_round_c < rounds:
 
-        # Interaction 1)
         # Prepare message
         local_state = copy.deepcopy(local_model.state_dict())
         cli_msg = utils_network.pack_message(
@@ -86,11 +85,9 @@ def client(cfg: dict):
             print('WARNING received message from: ', srv_id)
             continue
 
-        # Update local model
-        if fl_round_c != fl_round_s and not received and srv_upd:
+        # Interaction 1)
+        if fl_round_c != fl_round_s and srv_upd:
             fl_round_c = fl_round_s
-            received = True
-            updated = False
 
             # Assign received weights to local model
             local_model.load_state_dict(srv_m_state)
@@ -104,38 +101,18 @@ def client(cfg: dict):
                 epochs=epochs,
                 batch=batch,
                 lrn_rate=learning_rate,
-                momentum=momentum
+                momentum=momentum,
+                workers=workers
             )
             updated = True
 
         # Interaction 2)
-        local_state = copy.deepcopy(local_model.state_dict())
-        cli_msg = utils_network.pack_message(
-            idc=idcli, fl_r=fl_round_c, upd=updated, m_state=local_state)
-        data = b''
+        elif fl_round_c == fl_round_s and not srv_upd:
+            updated = False
 
-        # Send second message and receive reply
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.connect((srv_host, srv_port))
-            utils_network.send_message(s, cli_msg)
-
-            data = utils_network.receive_message(s)
-        except OSError:
-            print('WARNING could not connect to server')
-
-        finally:
-            s.close()
-
-        # If communication failed, continue
-        if not data:
+        # Something is wrong with the received message
+        else:
             continue
-
-        # Unpack server response
-        srv_id, fl_round_s, srv_upd, srv_m_state = utils_network.unpack_message(
-            data)
-        if not srv_upd:
-            received = False
 
 
 def standalone(
@@ -145,7 +122,8 @@ def standalone(
     epochs: int,
     batch: int,
     learning_rate: float,
-    momentum: float
+    momentum: float,
+    workers: int
 ):
     """ Train a standalone model on the dataset
 
@@ -159,6 +137,7 @@ def standalone(
         batch (int): size of mini batch
         learning_rate (float): optimizer learning rate
         momentum (float): optimizer momentum value
+        workers (int): number of worker threads
     """
 
     # Load the dataset
@@ -176,6 +155,10 @@ def standalone(
     model = utils_model.build_model(model_id, channels, classes)
     print('Model built:\n', model)
 
+    import numpy as np
+    np.save('trn_x', trn_x)
+    np.save('trn_y', trn_y)
+
     # Train the model
     training.train_epochs(
         model=model,
@@ -185,7 +168,8 @@ def standalone(
         epochs=epochs,
         batch=batch,
         lrn_rate=learning_rate,
-        momentum=momentum
+        momentum=momentum,
+        workers=workers
     )
 
     # Evaluation

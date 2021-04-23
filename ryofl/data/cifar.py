@@ -185,13 +185,13 @@ def _load_data_handler(in_data):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def _load_multi_clients(clients, base_dir=''):
+def _load_multi_clients(clients, base_dir: str = '', workers: int = 0):
     """ Use multiprocessing to load the data for multiple clients
 
     Args:
         clients: (list, ndarray, string) ids of the clients to load
         base_dir (str): overwrite default data dir
-
+        workers (int): number of dataloader workers
 
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
@@ -202,7 +202,8 @@ def _load_multi_clients(clients, base_dir=''):
     else:
         _dir = base_dir
 
-    workers = common.processors
+    if workers == 0:
+        workers = common.processors
 
     cli_lists = np.array_split(clients, workers)
     in_data_l = [(i, cli_lists[i], _dir) for i in range(workers)]
@@ -235,13 +236,15 @@ def _load_multi_clients(clients, base_dir=''):
 
 def load_data(
     clients,
-    frac: float = 1.0
+    frac: float = 1.0,
+    tst: bool = True
 ) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
     """ Load data wrapper for CIFAR100
 
     Args:
         clients: (list, ndarray, string) ids of the clients to load
         frac (float): fraction of the data to sample
+        tst (bool): if true load test data
 
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
@@ -270,15 +273,15 @@ def load_data(
             trn_x, test_size=frac, random_state=0, stratify=trn_y)
         _, trn_y = train_test_split(
             trn_y, test_size=frac, random_state=0, stratify=trn_y)
-        _, tst_x = train_test_split(
-            tst_x, test_size=frac, random_state=0, stratify=tst_y)
-        _, tst_y = train_test_split(
-            tst_y, test_size=frac, random_state=0, stratify=tst_y)
 
-    # Before returning the data, we need to transform the images from TF to torch
-    # formatting. That is from NxHxWxC to NxCxHxW.
-    #  trn_x = trn_x.transpose(0, 3, 1, 2)
-    #  tst_x = tst_x.transpose(0, 3, 1, 2)
+        if tst:
+            _, tst_x = train_test_split(
+                tst_x, test_size=frac, random_state=0, stratify=tst_y)
+            _, tst_y = train_test_split(
+                tst_y, test_size=frac, random_state=0, stratify=tst_y)
+        else:
+            tst_x = np.array([])
+            tst_y = np.array([])
 
     return trn_x, trn_y, tst_x, tst_y
 
@@ -299,7 +302,7 @@ def get_client_ids(trn: bool = True, tst: bool = True, base_dir: str = '') -> Tu
     tst_ids = []
 
     if not base_dir:
-        _dir = common.femnist_clients_dir
+        _dir = common.cifar100_clients_dir
     else:
         _dir = base_dir
 

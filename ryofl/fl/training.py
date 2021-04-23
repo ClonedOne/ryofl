@@ -7,6 +7,7 @@ import torch.optim as optim
 
 from numpy import ndarray
 
+from ryofl import common
 from ryofl.data import utils_data
 
 
@@ -18,7 +19,8 @@ def train_epochs(
     epochs: int = 10,
     batch: int = 32,
     lrn_rate: float = 0.001,
-    momentum: float = 0.9
+    momentum: float = 0.9,
+    workers: int = 0
 ):
     """ Train a standalone model on the provided data
 
@@ -29,15 +31,21 @@ def train_epochs(
         transform (Any): torch transformation to apply
         epochs (int): number of epochs
         batch (int): mini batch size
+        workers (int): number of training workers
     """
 
     # Select device to run the computation on
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
+    # Set the number of threads to use
+    if workers == 0:
+        workers = common.processors
+    torch.set_num_threads(workers)
+
     # Create a DataLoader from the given arrays
     trn_dl = utils_data.make_dataloader(
-        trn_x, trn_y, transform, shuffle=True, batch=batch)
+        trn_x, trn_y, transform, shuffle=True, batch=batch, workers=workers)
 
     # Define a loss function and an optimizer
     criterion = nn.CrossEntropyLoss()
