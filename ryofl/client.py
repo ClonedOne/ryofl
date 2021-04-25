@@ -49,6 +49,9 @@ def fl(config):
 @click.option(
     '--workers', help='number of worker threads', type=int, default=1
 )
+@click.option(
+    '--save_pth', help='path where to store model state', type=str, default=''
+)
 def train_standalone(
     dataset: str,
     model_id: str,
@@ -57,7 +60,8 @@ def train_standalone(
     batch: int,
     learning_rate: float,
     momentum: float,
-    workers: int
+    workers: int,
+    save_pth: str
 ):
     flclient.standalone(
         dataset,
@@ -67,7 +71,8 @@ def train_standalone(
         batch,
         learning_rate,
         momentum,
-        workers
+        workers,
+        save_pth
     )
 
 

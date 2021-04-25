@@ -2,7 +2,7 @@ import copy
 import socket
 
 from ryofl import common
-from ryofl.fl import flserver, training
+from ryofl.fl import training
 from ryofl.data import utils_data
 from ryofl.models import utils_model
 from ryofl.network import utils_network
@@ -123,7 +123,8 @@ def standalone(
     batch: int,
     learning_rate: float,
     momentum: float,
-    workers: int
+    workers: int,
+    save_pth: str
 ):
     """ Train a standalone model on the dataset
 
@@ -138,6 +139,7 @@ def standalone(
         learning_rate (float): optimizer learning rate
         momentum (float): optimizer momentum value
         workers (int): number of worker threads
+        save_pth (str): path where to save model state
     """
 
     # Load the dataset
@@ -181,3 +183,7 @@ def standalone(
         batch=batch
     )
     print('Model accuracy on test set: {:.4f}'.format(accuracy))
+
+    if save_pth:
+        utils_model.save_model(model, save_pth)
+
