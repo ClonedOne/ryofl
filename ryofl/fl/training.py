@@ -116,7 +116,7 @@ def eval_model(
 
     # Create a DataLoader from the given arrays
     tst_dl = utils_data.make_dataloader(
-        tst_x, tst_y, transform, shuffle=True, batch=batch)
+        tst_x, tst_y, transform, shuffle=False, batch=batch)
 
     # No gradient computation during evaluation
     with torch.no_grad():
