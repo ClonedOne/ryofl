@@ -32,6 +32,7 @@ def client(cfg: dict):
     srv_port = cfg['srv_port']
     data_clients = cfg['data_clis']
     workers = cfg['workers']
+    no_output = cfg['no_output']
 
     # Load local training data
     trn_x, trn_y, _, _ = utils_data.load_dataset(
@@ -52,7 +53,7 @@ def client(cfg: dict):
     # 1) send the current round number and ask for global state;
     # 2) send the updated local model.
     # Between these two interactions, the client updates its local state.
-    while fl_round_c < rounds:
+    while fl_round_c <= rounds:
 
         # Prepare message
         local_state = copy.deepcopy(local_model.state_dict())
@@ -102,7 +103,8 @@ def client(cfg: dict):
                 batch=batch,
                 lrn_rate=learning_rate,
                 momentum=momentum,
-                workers=workers
+                workers=workers,
+                no_output=no_output
             )
             updated = True
 

@@ -36,7 +36,7 @@ def fl(config):
 )
 @click.option(
     '--clients', help='number of clients participating',
-    type=int, prompt=True
+    type=int, default=4
 )
 @click.option(
     '--rounds', help='number of federated learning rounds',
@@ -75,6 +75,18 @@ def fl(config):
     '--workers', help='number of worker processes, 0 to use all processors',
     type=int, default=0
 )
+@click.option(
+    '--cliid_list', help='json list of client data files, overrides --clients',
+    type=str, default=''
+)
+@click.option(
+    '--no_output', help='set flag to avoid outputs from clients',
+    is_flag=True
+)
+@click.option(
+    '--make_script', help='set to generate script to launch clients',
+    is_flag=True
+)
 def make_configs(
     dataset: str,
     model_id: str,
@@ -88,20 +100,32 @@ def make_configs(
     momentum: float,
     min_clients: int,
     rnd_clients: int,
-    workers: int
+    workers: int,
+    cliid_list: str,
+    no_output: bool,
+    make_script: bool
 ):
+
+    # Check if config directory is present, create it if needed
+    if not os.path.isdir(common.cfg_dir):
+        os.makedirs(common.cfg_dir)
+
+    # If a file list is provided, use the data files listed there
+    if cliid_list:
+        trn_ids = json.load(
+            open(os.path.join(common.saved_files, cliid_list), 'r'))['cliids']
+        clients = len(trn_ids)
+
+    # Get the ids of the data chunks and crteate per-client lists
+    else:
+        trn_ids, _ = utils_data.get_client_ids(dataset, trn=True, tst=False)
+
     # If not specified, compute min_clients, rnd_clients
     if min_clients == 0:
         min_clients = min(clients, int((clients/2) + 2))
     if rnd_clients == 0:
         rnd_clients = min(clients, int((clients/2) + 1))
 
-    # Check if config directory is present, create it if needed
-    if not os.path.isdir(common.cfg_dir):
-        os.makedirs(common.cfg_dir)
-
-    # Get the ids of the data chunks and crteate per-client lists
-    trn_ids, _ = utils_data.get_client_ids(dataset, trn=True, tst=False)
     trn_ids_xclient = np.array_split(trn_ids, clients)
 
     # Create configurations
@@ -134,9 +158,23 @@ def make_configs(
         # If client, also provide list of data chunks
         else:
             cfg_dict['data_clis'] = trn_ids_xclient[i - 1].tolist()
+            cfg_dict['no_output'] = no_output
 
         # Save to file
         json.dump(cfg_dict, open(cfg_file, 'w', encoding='utf-8'), indent=2)
+
+    # If requested, generate a script to run all the clients sequentially
+    if make_script:
+        client_cmd = 'python -m ryofl.client fl --config configs/cfg_file_{}.json &'
+        script_lines = ['#!/bin/bash', ]
+
+        for i in range(1, clients + 1):
+            script_lines.append(client_cmd.format(i))
+            script_lines.append('sleep 0.1;')
+
+        with open('run_clients.sh', 'w', encoding='utf-8') as script_file:
+            for line in script_lines:
+                script_file.write(line + '\n')
 
 
 if __name__ == '__main__':

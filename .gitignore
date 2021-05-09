@@ -128,5 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# configuration file created by the scripts
+# Pycharm
+.idea/
+
+# files created by the scripts
 configs/
+run_clients.sh

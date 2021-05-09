@@ -20,7 +20,8 @@ def train_epochs(
     batch: int = 32,
     lrn_rate: float = 0.001,
     momentum: float = 0.9,
-    workers: int = 0
+    workers: int = 0,
+    no_output: bool = False
 ):
     """ Train a standalone model on the provided data
 
@@ -32,6 +33,7 @@ def train_epochs(
         epochs (int): number of epochs
         batch (int): mini batch size
         workers (int): number of training workers
+        no_output (bool): if true, soppress outputs
     """
 
     # Select device to run the computation on
@@ -56,7 +58,7 @@ def train_epochs(
 
         cur_loss = 0.0
         i = 0
-        for i, data in tqdm.tqdm(enumerate(trn_dl, 0)):
+        for i, data in tqdm.tqdm(enumerate(trn_dl, 0), disable=no_output):
             # Send the data to the selected device
             x, y = data[0].to(device), data[1].to(device)
 
@@ -72,7 +74,8 @@ def train_epochs(
             # Print loss every 10 mini-batches
             cur_loss += loss.item()
 
-        print('epoch {} - loss: {:.3f}'.format(epoch, cur_loss / i))
+        if not no_output:
+            print('epoch {} - loss: {:.3f}'.format(epoch, cur_loss / i))
         cur_loss = 0.0
 
         # Evaluation
@@ -83,7 +86,8 @@ def train_epochs(
             transform=transform,
             batch=batch
         )
-        print('Model training accuracy: {:.4f}'.format(accuracy))
+        if not no_output:
+            print('Model training accuracy: {:.4f}'.format(accuracy))
 
 
 def eval_model(

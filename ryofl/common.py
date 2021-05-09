@@ -14,6 +14,7 @@ data_dir = '/home/gio/data'
 # This is the directory where the participants configuration
 # files will be saved.
 cfg_dir = 'configs/'
+saved_files = 'saved_files/'
 
 # Image datasets
 image_data_dir = os.path.join(data_dir, 'images')
