@@ -24,8 +24,11 @@ def build_model(model_id: str, channels: int, classes: int):
         pytorch model object
     """
 
-    if model_id == 'cnn':
-        return cnn.BaseCNN(channels=channels, classes=classes)
+    if model_id == 'cnn_small':
+        return cnn.SmallCNN(channels=channels, classes=classes)
+
+    if model_id == 'cnn_alex':
+        return cnn.AlexnetCNN(channels=channels, classes=classes)
 
     else:
         raise NotImplementedError('Model {} not supported'.format(model_id))
