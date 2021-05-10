@@ -133,7 +133,7 @@ def _generate_cifar100(force=False):
 @click.command()
 @click.option(
     '--dataset', help='dataset to prepare',
-    type=click.Choice(['femnist', 'cifar100'], case_sensitive=False),
+    type=click.Choice(['femnist', 'cifar100', 'cifar20'], case_sensitive=False),
     prompt=True
 )
 @click.option('--force', is_flag=True, help='force re-generation')
@@ -151,6 +151,9 @@ def generate_datasets(dataset, force):
         _generate_femnist(force)
 
     elif dataset == 'cifar100':
+        _generate_cifar100(force)
+
+    elif dataset == 'cifar20':
         _generate_cifar100(force)
 
     else:
