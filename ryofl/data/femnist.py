@@ -9,6 +9,7 @@ from multiprocessing import Pool
 
 import h5py
 import numpy as np
+# noinspection PyPackageRequirements
 import torchvision.transforms as transforms
 
 from numpy import ndarray
@@ -129,13 +130,13 @@ def _load_data_handler(in_data: tuple):
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
     """
 
-    wid = in_data[0]
+    # wid = in_data[0]  # Id of the worker, can be used for debug
     clients = in_data[1]
     _dir = in_data[2]
 
     # If the clients list is empty, this worker is unused
     if clients.size == 0:
-        return (np.array([]), np.array([]), np.array([]), np.array([]))
+        return np.array([]), np.array([]), np.array([]), np.array([])
 
     trn_x_acc = []
     trn_y_acc = []
@@ -208,9 +209,9 @@ def _load_multi_clients(clients, base_dir: str = '', workers: int = 0):
 
 
 def load_data(
-    clients,
-    frac: float = 1.0,
-    tst: bool = True
+        clients,
+        frac: float = 1.0,
+        tst: bool = True
 ) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
     """ Load data wrapper for FEMNIST
 

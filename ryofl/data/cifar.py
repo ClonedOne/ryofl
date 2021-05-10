@@ -9,6 +9,7 @@ from multiprocessing import Pool
 
 import h5py
 import numpy as np
+# noinspection PyPackageRequirements
 import torchvision.transforms as transforms
 
 from numpy import ndarray
@@ -19,6 +20,7 @@ from ryofl import common
 # Medata
 channels = 3
 classes = 100
+classes_coarse = 20
 
 # Image transformations
 # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
@@ -28,11 +30,12 @@ transform = transforms.Compose([
 ])
 
 
-def _load_full(base_dir: str = ''):
+def _load_full(base_dir: str = '', coarse_labels=False):
     """ Load the entire cifar100 dataset
 
     Args:
         base_dir (str): overwrite default data dir
+        coarse_labels (bool): if true, use cifar100 coarse labels
 
     Raises:
         FileNotFoundError: Requires the preprocessing script to be run
@@ -40,6 +43,10 @@ def _load_full(base_dir: str = ''):
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
     """
+
+    label_indicator = 'label'
+    if coarse_labels:
+        label_indicator = 'coarse_label'
 
     if not base_dir:
         _dir = os.path.join(common.image_data_dir, 'datasets')
@@ -68,7 +75,7 @@ def _load_full(base_dir: str = ''):
         trn_cli = trn_file['examples'][client_id]
 
         # Extract labels and data
-        labels_trn = trn_cli['label'][()]
+        labels_trn = trn_cli[label_indicator][()]
         matrix_trn = trn_cli['image'][()]
 
         # Accumulate
@@ -79,7 +86,7 @@ def _load_full(base_dir: str = ''):
         if client_id in tst_file['examples']:
             tst_cli = tst_file['examples'][client_id]
             matrix_tst = tst_cli['image'][()]
-            labels_tst = tst_cli['label'][()]
+            labels_tst = tst_cli[label_indicator][()]
             tst_x_acc.append(matrix_tst)
             tst_y_acc.append(labels_tst)
 
@@ -91,12 +98,13 @@ def _load_full(base_dir: str = ''):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def _load_single_client(client_id, base_dir=''):
+def _load_single_client(client_id, base_dir='', coarse_labels=False):
     """ Load the CIFAR100 data for a single client
 
     Args:
         client_id (str): id of the client's data to load
         base_dir (str): overwrite default data dir
+        coarse_labels (bool): if true, use cifar100 coarse labels
 
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
@@ -107,6 +115,10 @@ def _load_single_client(client_id, base_dir=''):
     else:
         _dir = base_dir
 
+    label_indicator = 'y'
+    if coarse_labels:
+        label_indicator = 'y_coarse'
+
     client_f = os.path.join(_dir, '{}_cli-' + str(client_id) + '_{}.npy')
 
     trn_x_file = client_f.format('trn', 'x')
@@ -116,7 +128,7 @@ def _load_single_client(client_id, base_dir=''):
         print('WARNING data file {} not found'.format(trn_x_file))
         trn_x = np.array([])
 
-    trn_y_file = client_f.format('trn', 'y')
+    trn_y_file = client_f.format('trn', label_indicator)
     if os.path.isfile(trn_y_file):
         trn_y = np.load(trn_y_file, allow_pickle=True)
     else:
@@ -130,7 +142,7 @@ def _load_single_client(client_id, base_dir=''):
         print('WARNING data file {} not found'.format(tst_x_file))
         tst_x = np.array([])
 
-    tst_y_file = client_f.format('tst', 'y')
+    tst_y_file = client_f.format('tst', label_indicator)
     if os.path.isfile(tst_y_file):
         tst_y = np.load(tst_y_file, allow_pickle=True)
     else:
@@ -150,13 +162,14 @@ def _load_data_handler(in_data):
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
     """
 
-    wid = in_data[0]
+    # wid = in_data[0]  # Id of the worker, can be used for debug
     clients = in_data[1]
     _dir = in_data[2]
+    coarse_labels = in_data[3]
 
     # If the clients list is empty, this worker is unused
     if clients.size == 0:
-        return (np.array([]), np.array([]), np.array([]), np.array([]))
+        return np.array([]), np.array([]), np.array([]), np.array([])
 
     trn_x_acc = []
     trn_y_acc = []
@@ -166,7 +179,7 @@ def _load_data_handler(in_data):
     # Load data for all the clients
     for client_id in clients:
         trn_x, trn_y, tst_x, tst_y = _load_single_client(
-            client_id=client_id, base_dir=_dir)
+            client_id=client_id, base_dir=_dir, coarse_labels=coarse_labels)
 
         trn_x_acc.append(trn_x)
         trn_y_acc.append(trn_y)
@@ -185,13 +198,14 @@ def _load_data_handler(in_data):
     return trn_x, trn_y, tst_x, tst_y
 
 
-def _load_multi_clients(clients, base_dir: str = '', workers: int = 0):
+def _load_multi_clients(clients, base_dir: str = '', workers: int = 0, coarse_labels=False):
     """ Use multiprocessing to load the data for multiple clients
 
     Args:
         clients: (list, ndarray, string) ids of the clients to load
         base_dir (str): overwrite default data dir
         workers (int): number of dataloader workers
+        coarse_labels (bool): if true, use cifar100 coarse labels
 
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
@@ -206,7 +220,7 @@ def _load_multi_clients(clients, base_dir: str = '', workers: int = 0):
         workers = common.processors
 
     cli_lists = np.array_split(clients, workers)
-    in_data_l = [(i, cli_lists[i], _dir) for i in range(workers)]
+    in_data_l = [(i, cli_lists[i], _dir, coarse_labels) for i in range(workers)]
 
     with Pool(workers) as p:
         rets = p.map(_load_data_handler, in_data_l)
@@ -235,9 +249,10 @@ def _load_multi_clients(clients, base_dir: str = '', workers: int = 0):
 
 
 def load_data(
-    clients,
-    frac: float = 1.0,
-    tst: bool = True
+        clients,
+        frac: float = 1.0,
+        tst: bool = True,
+        coarse_labels: bool = False,
 ) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
     """ Load data wrapper for CIFAR100
 
@@ -245,6 +260,7 @@ def load_data(
         clients: (list, ndarray, string) ids of the clients to load
         frac (float): fraction of the data to sample
         tst (bool): if true load test data
+        coarse_labels (bool): if true, use cifar100 coarse labels
 
     Returns:
         (ndarray, ndarray, ndarray, ndarray): trn_x, trn_y, tst_x, tst_y
@@ -253,16 +269,16 @@ def load_data(
     #  If the clients parameter is None, return the entire training and test
     #  sets
     if clients is None:
-        trn_x, trn_y, tst_x, tst_y = _load_full()
+        trn_x, trn_y, tst_x, tst_y = _load_full(coarse_labels=coarse_labels)
 
     # If multiple clients are passed, and the number of clients is > number of
     # processes define in the config, use multiprocessing to load the data
     elif isinstance(clients, (ndarray, list)):
-        trn_x, trn_y, tst_x, tst_y = _load_multi_clients(clients=clients)
+        trn_x, trn_y, tst_x, tst_y = _load_multi_clients(clients=clients, coarse_labels=coarse_labels)
 
     # Single client id has been passed
     elif isinstance(clients, str):
-        trn_x, trn_y, tst_x, tst_y = _load_single_client(client_id=clients)
+        trn_x, trn_y, tst_x, tst_y = _load_single_client(client_id=clients, coarse_labels=coarse_labels)
 
     else:
         raise NotImplementedError('clients: {} not supported'.format(clients))

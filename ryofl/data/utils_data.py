@@ -14,10 +14,10 @@ from ryofl.data import femnist, cifar
 
 
 def load_dataset(
-    dataset: str,
-    clients=None,
-    fraction: float = 1.0,
-    tst: bool = True,
+        dataset: str,
+        clients=None,
+        fraction: float = 1.0,
+        tst: bool = True,
 ) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
     """ Wrapper function to load data from a dataset
 
@@ -42,6 +42,9 @@ def load_dataset(
     elif dataset == 'cifar100':
         return cifar.load_data(clients, fraction, tst)
 
+    elif dataset == 'cifar20':
+        return cifar.load_data(clients, fraction, tst, coarse_labels=True)
+
     else:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))
 
@@ -64,6 +67,9 @@ def get_metadata(dataset: str) -> Tuple[int, int, Any]:
 
     elif dataset == 'cifar100':
         return cifar.channels, cifar.classes, cifar.transform
+
+    elif dataset == 'cifar20':
+        return cifar.channels, cifar.classes_coarse, cifar.transform
 
     else:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))
@@ -90,17 +96,20 @@ def get_client_ids(dataset: str, trn: bool = True, tst: bool = True) -> Tuple:
     elif dataset == 'cifar100':
         return cifar.get_client_ids(trn=trn, tst=tst)
 
+    elif dataset == 'cifar20':
+        return cifar.get_client_ids(trn=trn, tst=tst)
+
     else:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))
 
 
 def make_dataloader(
-    x: Iterable,
-    y: Iterable,
-    transform: Any,
-    shuffle: bool,
-    batch: int,
-    workers: int = 0
+        x: Iterable,
+        y: Iterable,
+        transform: Any,
+        shuffle: bool,
+        batch: int,
+        workers: int = 0
 ) -> DataLoader:
     """ Generate DataLoader from numpy arrays
 

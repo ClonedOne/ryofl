@@ -110,6 +110,7 @@ def _generate_cifar100(force=False):
 
         # True labels
         labels_trn = train_file['examples'][client_id]['label'][()]
+        labels_trn_coarse = train_file['examples'][client_id]['coarse_label'][()]
 
         # No need to add channels for cifar100
         matrix_trn = train_file['examples'][client_id]['image'][()]
@@ -117,13 +118,16 @@ def _generate_cifar100(force=False):
         # Save to file
         np.save(client_f.format('trn', 'x'), matrix_trn)
         np.save(client_f.format('trn', 'y'), labels_trn)
+        np.save(client_f.format('trn', 'y_coarse'), labels_trn_coarse)
 
         # Cifar train cleints are a superset of the test ones
         if client_id in test_file['examples']:
             labels_tst = test_file['examples'][client_id]['label'][()]
+            labels_tst_coarse = test_file['examples'][client_id]['coarse_label'][()]
             matrix_tst = test_file['examples'][client_id]['image'][()]
             np.save(client_f.format('tst', 'x'), matrix_tst)
             np.save(client_f.format('tst', 'y'), labels_tst)
+            np.save(client_f.format('tst', 'y_coarse'), labels_tst_coarse)
 
 
 @click.command()
