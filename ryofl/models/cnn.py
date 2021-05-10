@@ -70,19 +70,19 @@ class AlexnetCNN(nn.Module):
     https://github.com/bearpaw/pytorch-classification/blob/master/models/cifar/alexnet.py
     """
 
-    def __init__(self, channels: int, classes: int):
-        """ Network definition
+    def __init__(self, channels=3, classes=10):
+    """ Network definition
 
         Args:
             channels (int): number of channels
             classes (int): number of output classes
-        """
 
+    """
+
+        super(AlexnetCNN, self).__init__()
         self.channels = channels
         self.classes = classes
-        super(AlexnetCNN, self).__init__()
 
-        # Convolutions
         self.features = nn.Sequential(
             nn.Conv2d(self.channels, 64, kernel_size=11, stride=4, padding=5),
             nn.ReLU(inplace=True),
@@ -99,16 +99,7 @@ class AlexnetCNN(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
-        # Adaptive max pooling to handle different sizes
-        self.amaxpool = nn.AdaptiveMaxPool2d((7, 7))
-
-        # Linear layers
-        self.fc1 = nn.Linear(256 * 7 * 7, 400)
-        self.fc2 = nn.Linear(400, 120)
-        self.fc3 = nn.Linear(120, self.classes)
-
-        # Dropout regularization
-        self.dropout = nn.Dropout(0.25)
+        self.classifier = nn.Linear(256, self.classes)
 
     def forward(self, x):
         """ Forward pass of the network
@@ -120,13 +111,9 @@ class AlexnetCNN(nn.Module):
             processed representation
         """
 
-        x = self.amaxpool(self.features(x))
-        x = x.view(-1, 256 * 7 * 7)
-        x = self.dropout(x)
-        x = F.relu(self.fc1(x))
-        x = self.dropout(x)
-        x = F.relu(self.fc2(x))
-        x = self.dropout(x)
-        x = self.fc3(x)
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+
         return x
 
