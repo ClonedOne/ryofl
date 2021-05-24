@@ -125,28 +125,24 @@ def _load_single_client(client_id, base_dir='', coarse_labels=False):
     if os.path.isfile(trn_x_file):
         trn_x = np.load(trn_x_file, allow_pickle=True)
     else:
-        print('WARNING data file {} not found'.format(trn_x_file))
         trn_x = np.array([])
 
     trn_y_file = client_f.format('trn', label_indicator)
     if os.path.isfile(trn_y_file):
         trn_y = np.load(trn_y_file, allow_pickle=True)
     else:
-        print('WARNING data file {} not found'.format(trn_y_file))
         trn_y = np.array([])
 
     tst_x_file = client_f.format('tst', 'x')
     if os.path.isfile(tst_x_file):
         tst_x = np.load(tst_x_file, allow_pickle=True)
     else:
-        print('WARNING data file {} not found'.format(tst_x_file))
         tst_x = np.array([])
 
     tst_y_file = client_f.format('tst', label_indicator)
     if os.path.isfile(tst_y_file):
         tst_y = np.load(tst_y_file, allow_pickle=True)
     else:
-        print('WARNING data file {} not found'.format(tst_y_file))
         tst_y = np.array([])
 
     return trn_x, trn_y, tst_x, tst_y
@@ -324,12 +320,12 @@ def get_client_ids(trn: bool = True, tst: bool = True, base_dir: str = '') -> Tu
 
     if trn:
         trn_ids = sorted(set(
-            [i.split('-')[1][:-6] for i in os.listdir(_dir) if 'trn' in i]
+            [i.split('-')[1].split('_')[0] for i in os.listdir(_dir) if 'trn' in i]
         ))
 
     if tst:
         tst_ids = sorted(set(
-            [i.split('-')[1][:-6] for i in os.listdir(_dir) if 'tst' in i]
+            [i.split('-')[1].split('_')[0] for i in os.listdir(_dir) if 'tst' in i]
         ))
 
     return trn_ids, tst_ids

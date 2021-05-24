@@ -71,13 +71,13 @@ class AlexnetCNN(nn.Module):
     """
 
     def __init__(self, channels=3, classes=10):
-    """ Network definition
+        """ Network definition
 
         Args:
             channels (int): number of channels
             classes (int): number of output classes
 
-    """
+        """
 
         super(AlexnetCNN, self).__init__()
         self.channels = channels
@@ -116,4 +116,3 @@ class AlexnetCNN(nn.Module):
         x = self.classifier(x)
 
         return x
-

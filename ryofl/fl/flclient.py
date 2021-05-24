@@ -39,7 +39,8 @@ def client(cfg: dict):
         dataset=dataset, clients=data_clients, fraction=fraction, tst=False)
     channels, classes, transform = utils_data.get_metadata(dataset=dataset)
     del _
-    print('Training data shapes: {} - {}'.format(trn_x.shape, trn_y.shape))
+    if not no_output:
+        print('Training data shapes: {} - {}'.format(trn_x.shape, trn_y.shape))
 
     # Initialize local model
     local_model = utils_model.build_model(model_id, channels, classes)
@@ -69,7 +70,8 @@ def client(cfg: dict):
 
             data = utils_network.receive_message(s)
         except OSError:
-            print('WARNING could not connect to server')
+            if not no_output:
+                print('WARNING could not connect to server')
 
         finally:
             s.close()
@@ -83,7 +85,8 @@ def client(cfg: dict):
             data)
 
         if srv_id != common.SRV_ID:
-            print('WARNING received message from: ', srv_id)
+            if not no_output:
+                print('WARNING received message from: ', srv_id)
             continue
 
         # Interaction 1)
@@ -118,15 +121,15 @@ def client(cfg: dict):
 
 
 def standalone(
-    dataset: str,
-    model_id: str,
-    fraction: float,
-    epochs: int,
-    batch: int,
-    learning_rate: float,
-    momentum: float,
-    workers: int,
-    save_pth: str
+        dataset: str,
+        model_id: str,
+        fraction: float,
+        epochs: int,
+        batch: int,
+        learning_rate: float,
+        momentum: float,
+        workers: int,
+        save_pth: str
 ):
     """ Train a standalone model on the dataset
 
@@ -188,4 +191,3 @@ def standalone(
 
     if save_pth:
         utils_model.save_model(model, save_pth)
-

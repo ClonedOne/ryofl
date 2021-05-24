@@ -15,6 +15,7 @@ data_dir = '/home/gio/data'
 # files will be saved.
 cfg_dir = 'configs/'
 saved_files = 'saved_files/'
+results = 'results/'
 
 # Image datasets
 image_data_dir = os.path.join(data_dir, 'images')
