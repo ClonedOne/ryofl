@@ -25,12 +25,12 @@ def select_server(serv_type: str):
 )
 @click.option(
     '-s', '--server_type', help='type of server to instantiate',
-    type=str, prompt=True
+    type=str, default='basic'
 )
-def fl(config, serv_type):
+def fl(config, server_type):
     cfg = json.load(open(config, 'r', encoding='utf-8'))
 
-    serv = select_server(serv_type)
+    serv = select_server(server_type)
     serv(cfg)
 
 

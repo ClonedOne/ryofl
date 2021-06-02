@@ -12,16 +12,16 @@ from ryofl.data import utils_data
 
 
 def train_epochs(
-    model: Any,
-    trn_x: ndarray,
-    trn_y: ndarray,
-    transform,
-    epochs: int = 10,
-    batch: int = 32,
-    lrn_rate: float = 0.001,
-    momentum: float = 0.9,
-    workers: int = 0,
-    no_output: bool = False
+        model: Any,
+        trn_x: ndarray,
+        trn_y: ndarray,
+        transform,
+        epochs: int = 10,
+        batch: int = 32,
+        lrn_rate: float = 0.001,
+        momentum: float = 0.9,
+        workers: int = 0,
+        no_output: bool = False
 ):
     """ Train a standalone model on the provided data
 
@@ -39,6 +39,7 @@ def train_epochs(
     # Select device to run the computation on
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
+    model.train()
 
     # Set the number of threads to use
     if workers == 0:
@@ -76,7 +77,6 @@ def train_epochs(
 
         if not no_output:
             print('epoch {} - loss: {:.3f}'.format(epoch, cur_loss / i))
-        cur_loss = 0.0
 
         # Evaluation
         accuracy = eval_model(
@@ -91,11 +91,11 @@ def train_epochs(
 
 
 def eval_model(
-    model: Any,
-    tst_x: ndarray,
-    tst_y: ndarray,
-    transform,
-    batch: int
+        model: Any,
+        tst_x: ndarray,
+        tst_y: ndarray,
+        transform,
+        batch: int
 ) -> float:
     """ Evaluate model on provided data
 
@@ -117,6 +117,7 @@ def eval_model(
     # Select device to run the computation on
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
+    model.eval()
 
     # Create a DataLoader from the given arrays
     tst_dl = utils_data.make_dataloader(
@@ -125,7 +126,6 @@ def eval_model(
     # No gradient computation during evaluation
     with torch.no_grad():
         for data in tst_dl:
-
             # Send the data to the selected device
             x, y = data[0].to(device), data[1].to(device)
             outputs = model(x)

@@ -4,7 +4,7 @@ import numpy as np
 
 from ryofl import common
 from ryofl import generate_datasets
-from ryofl.data import femnist, cifar
+from ryofl.data import femnist, cifar100
 
 
 # Test the existence of dataset files
@@ -132,7 +132,7 @@ def test_load_multiple_clients_cifar():
     tst_x = np.concatenate(tst_x_acc)
     tst_y = np.concatenate(tst_y_acc)
 
-    trn_xm, trn_ym, tst_xm, tst_ym = cifar._load_multi_clients(clients)
+    trn_xm, trn_ym, tst_xm, tst_ym = cifar100._load_multi_clients(clients)
 
     assert np.array_equal(trn_x, trn_xm)
     assert np.array_equal(tst_x, tst_xm)

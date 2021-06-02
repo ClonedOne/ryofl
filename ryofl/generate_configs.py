@@ -76,6 +76,10 @@ def cli():
     '--make_script', help='set to generate script to launch clients',
     is_flag=True
 )
+@click.option(
+    '--aggregation_rate', help='aggregation rate for FL steps',
+    type=float, default=0.1
+)
 def make_configs(
         dataset: str,
         model_id: str,
@@ -92,7 +96,9 @@ def make_configs(
         workers: int,
         cliid_list: str,
         no_output: bool,
-        make_script: bool
+        make_script: bool,
+        aggregation_rate: float,
+
 ):
     # Check if config directory is present, create it if needed
     if not os.path.isdir(common.cfg_dir):
@@ -100,8 +106,7 @@ def make_configs(
 
     # If a file list is provided, use the data files listed there
     if cliid_list:
-        trn_ids = json.load(
-            open(os.path.join(common.saved_files, cliid_list), 'r'))['cliids']
+        trn_ids = json.load(open(cliid_list, 'r'))['cliids']
         clients = len(trn_ids)
 
     # Get the ids of the data chunks and crteate per-client lists
@@ -142,6 +147,7 @@ def make_configs(
             cfg_dict['min_clients'] = min_clients
             cfg_dict['rnd_clients'] = rnd_clients
             cfg_dict['aggregation'] = aggregation
+            cfg_dict['aggregation_rate'] = aggregation_rate
 
         # If client, also provide list of data chunks
         else:

@@ -26,20 +26,24 @@ class SmallCNN(nn.Module):
 
         # Convolutions
         # #channels, 6 output channels, 5x5 convolution
-        self.conv1 = nn.Conv2d(self.channels, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
+        # self.conv1 = nn.Conv2d(self.channels, 6, 5)
+        # self.conv2 = nn.Conv2d(6, 16, 5)
+        self.conv1 = nn.Conv2d(self.channels, 16, 3, padding=1)
+        self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
+        self.conv3 = nn.Conv2d(32, 64, 3, padding=1)
 
+        self.pool = nn.MaxPool2d(2, 2)
         # Adaptive max pooling to handle different sizes
         self.amaxpool = nn.AdaptiveMaxPool2d((5, 7))
 
         # Linear layers
-        self.fc1 = nn.Linear(16 * 5 * 7, 400)
-        self.fc2 = nn.Linear(400, 120)
-        self.fc3 = nn.Linear(120, self.classes)
+        # self.fc1 = nn.Linear(16 * 5 * 7, 400)
+        self.fc1 = nn.Linear(64 * 5 * 7, 512)
+        self.fc2 = nn.Linear(512, 128)
+        self.fc3 = nn.Linear(128, self.classes)
 
         # Dropout regularization
-        self.dropout = nn.Dropout(0.25)
+        self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
         """ Forward pass of the network
@@ -51,10 +55,14 @@ class SmallCNN(nn.Module):
             processed representation
         """
 
-        x = self.pool(F.relu(self.conv1(x)))
-        #  x = self.pool(F.relu(self.conv2(x)))
-        x = self.amaxpool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 7)
+        # x = self.pool(F.relu(self.conv1(x)))
+        # #  x = self.pool(F.relu(self.conv2(x)))
+        # x = self.amaxpool(F.relu(self.conv2(x)))
+        x = self.pool(F.elu(self.conv1(x)))
+        x = self.pool(F.elu(self.conv2(x)))
+        x = self.amaxpool(F.elu(self.conv3(x)))
+        # x = x.view(-1, 16 * 5 * 7)
+        x = x.view(-1, 64 * 5 * 7)
         x = self.dropout(x)
         x = F.relu(self.fc1(x))
         x = self.dropout(x)

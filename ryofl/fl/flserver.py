@@ -1,15 +1,17 @@
+import os
 import copy
-import time
 import threading
 import socketserver
 
+from datetime import datetime
+
 import numpy as np
 
+from ryofl import common
 from ryofl.data import utils_data
 from ryofl.models import utils_model
 from ryofl.network import utils_network
 from ryofl.fl import aggregations, training
-
 
 # Current round of federated learning from the point of view of the server
 fl_round_s = 1
@@ -60,6 +62,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         data = b''
         try:
             data = utils_network.receive_message(self.request)
+
         except OSError:
             print('WARNING problems with request:', self.request)
 
@@ -119,9 +122,12 @@ def serve(cfg: dict):
 
     This server will act as aggregator for the updates coming from each client.
     The expected behavior is:
-    - if the client is connecting for the first time in this round, send the current global state;
-    - if the client is connecting for the second time, store the state of the client model;
-    - when enough clients have sent their state, aggregate them and update the global model;
+    - if the client is connecting for the first time in this round, send the
+      current global state;
+    - if the client is connecting for the second time, store the state of the
+      client model;
+    - when enough clients have sent their state, aggregate them and update the
+      global model;
     - evaluate current state of global model on test set.
 
     Args:
@@ -137,8 +143,12 @@ def serve(cfg: dict):
     rounds = cfg['rounds']
     batch = cfg['batch']
     aggregation = cfg['aggregation']
+    aggregation_rate = cfg['aggregation_rate']
 
     # Global configuration values
+    global fl_round_s, fl_round_s_lock
+    global global_state, global_state_lock
+    global cli_model_state, cli_model_state_lock
     global SRV_ID, SRV_HOST, SRV_PORT, NUMCLIENTS, MINCLIENTS, RNDCLIENTS
     SRV_ID = cfg['idcli']
     SRV_HOST = cfg['srv_host']
@@ -147,10 +157,16 @@ def serve(cfg: dict):
     MINCLIENTS = cfg['min_clients']
     RNDCLIENTS = cfg['rnd_clients']
 
-    # Global variables and locks that will be accessed
-    global fl_round_s, fl_round_s_lock
-    global global_state, global_state_lock
-    global cli_model_state, cli_model_state_lock
+    # Generate experiment directory
+    res_pth = os.path.join(
+        common.results,
+        '{}_{}_{}'.format(
+            dataset,
+            model_id,
+            datetime.now().isoformat(timespec='minutes')
+        )
+    )
+    os.makedirs(res_pth, exist_ok=True)
 
     # Load test data
     _, _, tst_x, tst_y = utils_data.load_dataset(
@@ -164,9 +180,11 @@ def serve(cfg: dict):
     global_state = copy.deepcopy(global_model.state_dict())
     print('Model built:\n', global_model)
 
+    # Initialize accumulators
+    accuracies = []
+
     # Initialize server
     server = ThreadedTCPServer((SRV_HOST, SRV_PORT), ThreadedTCPRequestHandler)
-    accuracies = []
 
     # Server main loop
     with server:
@@ -179,7 +197,6 @@ def serve(cfg: dict):
 
         # Main server loop
         while fl_round_s <= rounds:
-            time.sleep(0.1)
 
             # Check the number of received models
             cli_model_state_lock.acquire()
@@ -195,12 +212,11 @@ def serve(cfg: dict):
                 continue
 
             # Otherwise:
-            # - acquire all locks, so that clents won't proceed
+            # - acquire all locks, so that clients won't proceed
             # - sample a subset of clients to use in aggregation
             # - aggregate weights
             # - test current state of the model
             # - update fl_round_s number
-
             fl_round_s_lock.acquire()
             global_state_lock.acquire()
             cli_model_state_lock.acquire()
@@ -216,8 +232,9 @@ def serve(cfg: dict):
 
                 # Aggregate weights and update global model
                 rnd_weights = aggregations.aggregate(
-                    rnd_cli_weights,
-                    aggregation
+                    client_weights=rnd_cli_weights,
+                    strategy=aggregation,
+                    params={'aggregation_rate': aggregation_rate}
                 )
                 global_model.load_state_dict(rnd_weights)
 
@@ -242,6 +259,11 @@ def serve(cfg: dict):
                 fl_round_s_lock.release()
                 global_state_lock.release()
                 cli_model_state_lock.release()
+
+        utils_model.save_model(
+            model=global_model,
+            pth=os.path.join(res_pth, 'model_{}'.format(fl_round_s))
+        )
 
         # Ensure server thread cleanup
         server.shutdown()

@@ -1,5 +1,8 @@
+import os
 import copy
 import socket
+
+import numpy as np
 
 from ryofl import common
 from ryofl.fl import training
@@ -162,10 +165,6 @@ def standalone(
     model = utils_model.build_model(model_id, channels, classes)
     print('Model built:\n', model)
 
-    import numpy as np
-    np.save('trn_x', trn_x)
-    np.save('trn_y', trn_y)
-
     # Train the model
     training.train_epochs(
         model=model,
@@ -190,4 +189,7 @@ def standalone(
     print('Model accuracy on test set: {:.4f}'.format(accuracy))
 
     if save_pth:
+        os.makedirs(save_pth, exist_ok=True)
         utils_model.save_model(model, save_pth)
+        np.save(os.path.join(save_pth, 'trn_x'), trn_x)
+        np.save(os.path.join(save_pth, 'trn_y'), trn_y)

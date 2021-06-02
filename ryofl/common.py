@@ -23,6 +23,8 @@ image_data_dir = os.path.join(data_dir, 'images')
 femnist_clients_dir = os.path.join(image_data_dir, 'femnist_clients')
 # CIFAR100 clients data
 cifar100_clients_dir = os.path.join(image_data_dir, 'cifar100_clients')
+# CIFAR10 clients data
+cifar10_clients_dir = os.path.join(image_data_dir, 'cifar10_clients')
 
 # Server constants
 SRV_ID = 0

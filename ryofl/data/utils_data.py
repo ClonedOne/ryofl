@@ -4,13 +4,15 @@ Generic utilities related to handling the datasets
 
 from typing import Tuple, Any, Iterable
 
+# noinspection PyPackageRequirements
 import torch
 
 from numpy import ndarray
+# noinspection PyPackageRequirements
 from torch.utils.data import TensorDataset, DataLoader
 
 from ryofl import common
-from ryofl.data import femnist, cifar
+from ryofl.data import femnist, cifar100, cifar10
 
 
 def load_dataset(
@@ -40,10 +42,16 @@ def load_dataset(
         return femnist.load_data(clients, fraction, tst)
 
     elif dataset == 'cifar100':
-        return cifar.load_data(clients, fraction, tst)
+        return cifar100.load_data(clients, fraction, tst)
 
     elif dataset == 'cifar20':
-        return cifar.load_data(clients, fraction, tst, coarse_labels=True)
+        return cifar100.load_data(clients, fraction, tst, coarse_labels=True)
+
+    elif dataset == 'cifar10':
+        return cifar10.load_data(clients, fraction, tst, coarse_labels=False)
+
+    elif dataset == 'cifar2':
+        return cifar10.load_data(clients, fraction, tst, coarse_labels=True)
 
     else:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))
@@ -66,10 +74,16 @@ def get_metadata(dataset: str) -> Tuple[int, int, Any]:
         return femnist.channels, femnist.classes, femnist.transform
 
     elif dataset == 'cifar100':
-        return cifar.channels, cifar.classes, cifar.transform
+        return cifar100.channels, cifar100.classes, cifar100.transform
 
     elif dataset == 'cifar20':
-        return cifar.channels, cifar.classes_coarse, cifar.transform
+        return cifar100.channels, cifar100.classes_coarse, cifar100.transform
+
+    elif dataset == 'cifar10':
+        return cifar10.channels, cifar10.classes, cifar10.transform
+
+    elif dataset == 'cifar2':
+        return cifar10.channels, cifar10.classes_coarse, cifar10.transform
 
     else:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))
@@ -94,10 +108,16 @@ def get_client_ids(dataset: str, trn: bool = True, tst: bool = True) -> Tuple:
         return femnist.get_client_ids(trn=trn, tst=tst)
 
     elif dataset == 'cifar100':
-        return cifar.get_client_ids(trn=trn, tst=tst)
+        return cifar100.get_client_ids(trn=trn, tst=tst)
 
     elif dataset == 'cifar20':
-        return cifar.get_client_ids(trn=trn, tst=tst)
+        return cifar100.get_client_ids(trn=trn, tst=tst)
+
+    elif dataset == 'cifar10':
+        return cifar10.get_client_ids(trn=trn, tst=tst)
+
+    elif dataset == 'cifar2':
+        return cifar10.get_client_ids(trn=trn, tst=tst)
 
     else:
         raise NotImplementedError('Dataset {} not supported'.format(dataset))
@@ -113,7 +133,7 @@ def make_dataloader(
 ) -> DataLoader:
     """ Generate DataLoader from numpy arrays
 
-    Tranform the numpy arrays in torch tensors.
+    Transform the numpy arrays in torch tensors.
     We also want to apply the transformations defined for each dataset.
     We need to unsqueeze the transformed data points because
     the concatenation will happen over axis 0.

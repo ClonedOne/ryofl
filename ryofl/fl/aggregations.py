@@ -5,6 +5,7 @@ aggregation.
 
 import copy
 
+
 def aggregate(
         client_weights: list,
         strategy: str,
@@ -43,6 +44,9 @@ def federated_averaging(client_weights: list) -> dict:
     Client weights are dictionaries obtained with model.state_dict()
     https://pytorch.org/tutorials/recipes/recipes/what_is_state_dict.html
 
+    Expected parameters in `params`:
+        None
+
     Args:
         client_weights (list): list of client weight dictionaries
 
@@ -75,15 +79,15 @@ def federated_averaging(client_weights: list) -> dict:
 
 def scaled_federated_averaging(
         client_weights: list,
-        params: dict = None
+        params: dict
 ) -> dict:
     """ Perform federated averaging over the clients' weights
 
     Client weights are dictionaries obtained with model.state_dict()
     https://pytorch.org/tutorials/recipes/recipes/what_is_state_dict.html
 
-    parameters in `params`:
-        alpha (float): learning rate for the aggregation
+    Expected parameters in `params`:
+        aggregation_rate (float): learning rate for the aggregation
 
     Args:
         client_weights (list): list of client weight dictionaries
@@ -97,10 +101,7 @@ def scaled_federated_averaging(
     if not client_weights:
         raise RuntimeError('Empty client_weights list recieved')
 
-    if params:
-        alpha = params.get('alpha', 0.3)
-    else:
-        alpha = 0.3
+    alpha = params.get('aggregation_rate', 0.1)
 
     num_updates = len(client_weights) - 1
 
